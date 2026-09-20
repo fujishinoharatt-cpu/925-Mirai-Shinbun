@@ -1,0 +1,176 @@
+// 未来新聞 — ページ生成スクリプト
+// Step 1: 固定データから HTML を組み立てるところまで（RSS / Gemini はまだ繋がない）
+
+import { writeFile, mkdir } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const OUT_FILE = join(ROOT, 'docs', 'index.html');
+
+const STEP_LABEL = 'Step 1: パイプライン疎通（固定データ）';
+
+// Step 2 で RSS の取得結果に差し替える
+const articles = [
+  {
+    title: 'これは動作確認用のダミー記事です',
+    summary:
+      'この文章が表示されていれば、タイマー起動からページ公開までの経路が通っています。' +
+      'RSS の取得と Gemini の要約は Step 2 以降で追加します。',
+    source: '動作確認',
+    url: '#',
+  },
+  {
+    title: '2件目のダミー記事',
+    summary: '記事が複数並んだときの見た目を確認するための項目です。',
+    source: '動作確認',
+    url: '#',
+  },
+];
+
+function toJstText(date) {
+  return new Intl.DateTimeFormat('ja-JP', {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
+const ESCAPE_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ESCAPE_MAP[c]);
+
+function renderArticle(article) {
+  return `      <article class="card">
+        <a class="card-link" href="${escapeHtml(article.url)}" target="_blank" rel="noopener">
+          <h2 class="card-title">${escapeHtml(article.title)}</h2>
+          <p class="card-summary">${escapeHtml(article.summary)}</p>
+          <span class="card-source">${escapeHtml(article.source)}</span>
+        </a>
+      </article>`;
+}
+
+function renderPage(items, builtAt) {
+  return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f1420">
+<title>未来新聞</title>
+<style>
+  /* 開発中テーマ: ダーク系グラスモーフィズム（Agent-T / Theme-Policy）
+     運用移行時は :root の変数セットを差し替えるだけで済むようにする */
+  :root {
+    --bg: #0f1420;
+    --bg-glow: #1d2b45;
+    --surface: rgba(255, 255, 255, 0.06);
+    --surface-hover: rgba(255, 255, 255, 0.10);
+    --border: rgba(255, 255, 255, 0.12);
+    --text: #e8ecf4;
+    --text-dim: #93a0b8;
+    --accent: #6ea8ff;
+    --shadow: rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0 16px 48px;
+    background: var(--bg);
+    background-image: radial-gradient(circle at 50% 0%, var(--bg-glow), var(--bg) 60%);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    line-height: 1.7;
+  }
+
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  header { padding: 32px 0 24px; text-align: center; }
+
+  .title {
+    margin: 0;
+    font-size: 1.75rem;
+    letter-spacing: 0.08em;
+  }
+
+  .built-at {
+    margin: 8px 0 0;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+
+  .step-badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--accent);
+    font-size: 0.75rem;
+  }
+
+  .card {
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 16px var(--shadow);
+    transition: background 0.2s;
+  }
+
+  .card:hover { background: var(--surface-hover); }
+
+  .card-link {
+    display: block;
+    padding: 20px;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .card-title { margin: 0 0 8px; font-size: 1.05rem; }
+
+  .card-summary { margin: 0 0 12px; color: var(--text-dim); font-size: 0.9rem; }
+
+  .card-source { color: var(--accent); font-size: 0.75rem; }
+
+  footer {
+    padding-top: 24px;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 class="title">未来新聞</h1>
+      <p class="built-at">最終更新 ${escapeHtml(builtAt)}</p>
+      <span class="step-badge">${escapeHtml(STEP_LABEL)}</span>
+    </header>
+
+    <main>
+${items.map(renderArticle).join('\n')}
+    </main>
+
+    <footer>925-Mirai-Shinbun / GitHub Actions により自動生成</footer>
+  </div>
+</body>
+</html>
+`;
+}
+
+const builtAt = toJstText(new Date());
+await mkdir(dirname(OUT_FILE), { recursive: true });
+await writeFile(OUT_FILE, renderPage(articles, builtAt), 'utf8');
+
+console.log(`生成しました: ${OUT_FILE}`);
+console.log(`ビルド時刻 (JST): ${builtAt}`);
+console.log(`記事件数: ${articles.length}`);
