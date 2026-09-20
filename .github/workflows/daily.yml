@@ -29,6 +29,9 @@ jobs:
 
       - name: ページを生成
         run: node scripts/build.mjs
+        env:
+          # 値は GitHub の Secrets から渡される。ログにも出力されない
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: 生成物をコミット
         run: |

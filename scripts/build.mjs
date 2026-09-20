@@ -1,15 +1,14 @@
 // 未来新聞 — ページ生成スクリプト
-// Step 2: RSS から集めた記事を HTML に組み立てる（要約はまだ RSS の説明文のまま）
+// RSS で集めた記事を Gemini に要約させて HTML に組み立てる
 
 import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectArticles } from './fetch.mjs';
+import { summarizeArticles } from './summarize.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_FILE = join(ROOT, 'docs', 'index.html');
-
-const STEP_LABEL = 'Step 2: RSS取得（AI要約は未接続）';
 
 function toJstText(date) {
   return new Intl.DateTimeFormat('ja-JP', {
@@ -46,7 +45,7 @@ function renderArticle(article) {
       </article>`;
 }
 
-function renderPage(items, builtAt) {
+function renderPage(items, builtAt, badge) {
   return `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -162,7 +161,7 @@ function renderPage(items, builtAt) {
     <header>
       <h1 class="title">未来新聞</h1>
       <p class="built-at">最終更新 ${escapeHtml(builtAt)}</p>
-      <span class="step-badge">${escapeHtml(STEP_LABEL)}</span>
+      <span class="step-badge">${escapeHtml(badge)}</span>
     </header>
 
     <main>
@@ -177,17 +176,21 @@ ${items.map(renderArticle).join('\n')}
 }
 
 console.log('RSS を収集します');
-const { articles, failures, total } = await collectArticles();
+const { articles: collected, failures, total } = await collectArticles();
 
 // 全滅時にページを空で上書きしないよう、ここで異常終了させて前回分を残す
-if (articles.length === 0) {
+if (collected.length === 0) {
   console.error('記事を1件も取得できませんでした。ページは更新しません。');
   process.exit(1);
 }
 
+console.log('Gemini で日本語要約を作ります');
+const { articles, summarized } = await summarizeArticles(collected);
+
+const badge = summarized ? 'AI要約つき' : 'AI要約なし（RSS原文）';
 const builtAt = toJstText(new Date());
 await mkdir(dirname(OUT_FILE), { recursive: true });
-await writeFile(OUT_FILE, renderPage(articles, builtAt), 'utf8');
+await writeFile(OUT_FILE, renderPage(articles, builtAt, badge), 'utf8');
 
 console.log(`生成しました: ${OUT_FILE}`);
 console.log(`ビルド時刻 (JST): ${builtAt}`);
