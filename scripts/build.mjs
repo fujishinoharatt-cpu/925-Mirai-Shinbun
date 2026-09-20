@@ -1,32 +1,15 @@
 // 未来新聞 — ページ生成スクリプト
-// Step 1: 固定データから HTML を組み立てるところまで（RSS / Gemini はまだ繋がない）
+// Step 2: RSS から集めた記事を HTML に組み立てる（要約はまだ RSS の説明文のまま）
 
 import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { collectArticles } from './fetch.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_FILE = join(ROOT, 'docs', 'index.html');
 
-const STEP_LABEL = 'Step 1: パイプライン疎通（固定データ）';
-
-// Step 2 で RSS の取得結果に差し替える
-const articles = [
-  {
-    title: 'これは動作確認用のダミー記事です',
-    summary:
-      'この文章が表示されていれば、タイマー起動からページ公開までの経路が通っています。' +
-      'RSS の取得と Gemini の要約は Step 2 以降で追加します。',
-    source: '動作確認',
-    url: '#',
-  },
-  {
-    title: '2件目のダミー記事',
-    summary: '記事が複数並んだときの見た目を確認するための項目です。',
-    source: '動作確認',
-    url: '#',
-  },
-];
+const STEP_LABEL = 'Step 2: RSS取得（AI要約は未接続）';
 
 function toJstText(date) {
   return new Intl.DateTimeFormat('ja-JP', {
@@ -42,12 +25,23 @@ function toJstText(date) {
 const ESCAPE_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ESCAPE_MAP[c]);
 
+function toShortDate(date) {
+  if (!date) return '';
+  return new Intl.DateTimeFormat('ja-JP', {
+    timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit',
+  }).format(date);
+}
+
 function renderArticle(article) {
+  const summary = article.summary
+    ? `\n          <p class="card-summary">${escapeHtml(article.summary)}</p>`
+    : '';
   return `      <article class="card">
         <a class="card-link" href="${escapeHtml(article.url)}" target="_blank" rel="noopener">
-          <h2 class="card-title">${escapeHtml(article.title)}</h2>
-          <p class="card-summary">${escapeHtml(article.summary)}</p>
+          <span class="card-badge">${escapeHtml(article.category)}</span>
+          <h2 class="card-title">${escapeHtml(article.title)}</h2>${summary}
           <span class="card-source">${escapeHtml(article.source)}</span>
+          <span class="card-date">${escapeHtml(toShortDate(article.publishedAt))}</span>
         </a>
       </article>`;
 }
@@ -134,11 +128,26 @@ function renderPage(items, builtAt) {
     text-decoration: none;
   }
 
+  .card-badge {
+    display: inline-block;
+    margin-bottom: 10px;
+    padding: 2px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+  }
+
+  /* 長い URL や英単語がはみ出して横スクロールが出るのを防ぐ */
+  .card-title, .card-summary { overflow-wrap: anywhere; }
+
   .card-title { margin: 0 0 8px; font-size: 1.05rem; }
 
   .card-summary { margin: 0 0 12px; color: var(--text-dim); font-size: 0.9rem; }
 
   .card-source { color: var(--accent); font-size: 0.75rem; }
+
+  .card-date { margin-left: 10px; color: var(--text-dim); font-size: 0.75rem; }
 
   footer {
     padding-top: 24px;
@@ -167,10 +176,19 @@ ${items.map(renderArticle).join('\n')}
 `;
 }
 
+console.log('RSS を収集します');
+const { articles, failures, total } = await collectArticles();
+
+// 全滅時にページを空で上書きしないよう、ここで異常終了させて前回分を残す
+if (articles.length === 0) {
+  console.error('記事を1件も取得できませんでした。ページは更新しません。');
+  process.exit(1);
+}
+
 const builtAt = toJstText(new Date());
 await mkdir(dirname(OUT_FILE), { recursive: true });
 await writeFile(OUT_FILE, renderPage(articles, builtAt), 'utf8');
 
 console.log(`生成しました: ${OUT_FILE}`);
 console.log(`ビルド時刻 (JST): ${builtAt}`);
-console.log(`記事件数: ${articles.length}`);
+console.log(`取得 ${total}件 → 掲載 ${articles.length}件 / 失敗フィード ${failures.length}件`);

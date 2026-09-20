@@ -1,0 +1,19 @@
+{
+  "maxAgeHours": 96,
+  "maxItems": 28,
+  "maxPerSource": 4,
+  "feeds": [
+    { "name": "Google AI Blog",  "category": "企業発表", "url": "https://blog.google/technology/ai/rss/" },
+    { "name": "OpenAI News",     "category": "企業発表", "url": "https://openai.com/news/rss.xml" },
+    { "name": "TechCrunch AI",   "category": "海外",     "url": "https://techcrunch.com/category/artificial-intelligence/feed/" },
+    { "name": "The Verge AI",    "category": "海外",     "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml" },
+    { "name": "Ars Technica",    "category": "海外",     "url": "https://feeds.arstechnica.com/arstechnica/technology-lab" },
+    { "name": "ITmedia AI+",     "category": "国内",     "url": "https://rss.itmedia.co.jp/rss/2.0/aiplus.xml" },
+    { "name": "Publickey",       "category": "国内",     "url": "https://www.publickey1.jp/atom.xml" },
+    { "name": "Hacker News",     "category": "開発者",   "url": "https://hnrss.org/frontpage" },
+    { "name": "Zenn",            "category": "開発者",   "url": "https://zenn.dev/feed" },
+    { "name": "Qiita",           "category": "開発者",   "url": "https://qiita.com/popular-items/feed" },
+    { "name": "arXiv cs.AI",     "category": "論文",     "url": "http://export.arxiv.org/rss/cs.AI" },
+    { "name": "arXiv cs.LG",     "category": "論文",     "url": "http://export.arxiv.org/rss/cs.LG" }
+  ]
+}
