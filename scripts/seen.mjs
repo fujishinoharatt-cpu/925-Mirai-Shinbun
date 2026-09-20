@@ -17,7 +17,9 @@ export async function loadSeen() {
   }
 }
 
-export async function saveSeen(previous, publishedUrls, retentionDays) {
+// 件数をページに載せる都合で、計算（mergeSeen）と保存（writeSeen）を分けている。
+// 計算だけ先に済ませればページに正しい件数を出せ、保存はページ書き出しの後に回せる
+export function mergeSeen(previous, publishedUrls, retentionDays) {
   const now = new Date();
   const limit = now.getTime() - retentionDays * 86400 * 1000;
 
@@ -27,9 +29,10 @@ export async function saveSeen(previous, publishedUrls, retentionDays) {
     Object.entries(previous).filter(([, iso]) => new Date(iso).getTime() >= limit)
   );
   for (const url of publishedUrls) kept[url] = now.toISOString();
+  return kept;
+}
 
+export async function writeSeen(urls) {
   await mkdir(dirname(SEEN_FILE), { recursive: true });
-  await writeFile(SEEN_FILE, `${JSON.stringify({ urls: kept }, null, 1)}\n`, 'utf8');
-
-  return Object.keys(kept).length;
+  await writeFile(SEEN_FILE, `${JSON.stringify({ urls }, null, 1)}\n`, 'utf8');
 }

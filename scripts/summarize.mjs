@@ -3,7 +3,7 @@
 
 // モデルを変えたいときはここを書き換える。
 // 提供終了したモデルを指定すると、API が後継モデル名を含む 404 を返すのでログで分かる
-const MODEL = 'gemini-3.6-flash';
+export const MODEL = 'gemini-3.6-flash';
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 const TIMEOUT_MS = 60000;
 
@@ -72,7 +72,7 @@ export async function summarizeArticles(articles) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.log('  GEMINI_API_KEY が未設定のため、RSS の説明文をそのまま使います');
-    return { articles, summarized: false };
+    return { articles, summarized: false, reason: 'APIキーが未設定' };
   }
 
   try {
@@ -92,6 +92,6 @@ export async function summarizeArticles(articles) {
   } catch (e) {
     // 要約が落ちた日でも新聞は出す。見出しは英語のままになる
     console.error(`  要約に失敗しました。RSS の説明文で続行します: ${e.message}`);
-    return { articles, summarized: false };
+    return { articles, summarized: false, reason: e.message.slice(0, 120) };
   }
 }

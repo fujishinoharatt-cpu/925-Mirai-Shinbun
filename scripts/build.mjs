@@ -5,8 +5,8 @@ import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectArticles } from './fetch.mjs';
-import { summarizeArticles } from './summarize.mjs';
-import { loadSeen, saveSeen } from './seen.mjs';
+import { summarizeArticles, MODEL } from './summarize.mjs';
+import { loadSeen, mergeSeen, writeSeen } from './seen.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_FILE = join(ROOT, 'docs', 'index.html');
@@ -46,7 +46,51 @@ function renderArticle(article) {
       </article>`;
 }
 
-function renderPage(items, builtAt, badge) {
+function renderReport(r) {
+  const feedRows = r.feedResults.map((f) => `
+          <tr>
+            <td class="feed-cat">${escapeHtml(f.category)}</td>
+            <td>${escapeHtml(f.name)}</td>
+            <td class="${f.ok ? 'stat-ok' : 'stat-ng'}">${f.ok ? `${f.count}件` : escapeHtml(f.error)}</td>
+          </tr>`).join('');
+
+  const ai = r.summarized
+    ? `${escapeHtml(r.model)} で要約`
+    : `要約なし（${escapeHtml(r.reason)}）`;
+
+  return `
+      <details class="report">
+        <summary>処理の状況</summary>
+        <div class="report-body">
+          <h3>今朝の実行結果</h3>
+          <dl class="kv">
+            <dt>実行時刻</dt><dd>${escapeHtml(r.builtAt)}</dd>
+            <dt>取得した記事</dt><dd>${r.total}件</dd>
+            <dt>掲載済みとして除外</dt><dd>${r.skipped}件</dd>
+            <dt>掲載</dt><dd>${r.published}件</dd>
+            <dt>AI要約</dt><dd>${ai}</dd>
+            <dt>掲載済みの記録</dt><dd>${r.seenCount}件</dd>
+          </dl>
+
+          <h3>取得元 ${r.feedResults.length}サイト</h3>
+          <table class="feeds">${feedRows}
+          </table>
+
+          <h3>処理の仕様</h3>
+          <ul class="spec">
+            <li>毎朝 5:30（日本時間）に GitHub Actions が自動実行</li>
+            <li>直近 ${r.config.maxAgeHours} 時間以内に公開された記事が対象</li>
+            <li>1媒体あたり最大 ${r.config.maxPerSource} 件、全体で最大 ${r.config.maxItems} 件</li>
+            <li>一度掲載した記事は ${r.config.seenRetentionDays} 日間は再掲しない</li>
+            <li>要約は全記事を1回のリクエストにまとめて送る（1日1回）</li>
+            <li>要約に失敗した日は RSS の原文を表示し、ページ自体は更新する</li>
+            <li>全サイトの取得に失敗した日は更新せず、前日の紙面を残す</li>
+          </ul>
+        </div>
+      </details>`;
+}
+
+function renderPage(items, builtAt, badge, report) {
   return `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -66,6 +110,7 @@ function renderPage(items, builtAt, badge) {
     --text: #e8ecf4;
     --text-dim: #93a0b8;
     --accent: #6ea8ff;
+    --warn: #f0a868;
     --shadow: rgba(0, 0, 0, 0.35);
   }
 
@@ -149,6 +194,42 @@ function renderPage(items, builtAt, badge) {
 
   .card-date { margin-left: 10px; color: var(--text-dim); font-size: 0.75rem; }
 
+  .report {
+    margin-top: 24px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+  }
+
+  .report summary {
+    padding: 14px 20px;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .report-body { padding: 0 20px 20px; font-size: 0.8rem; }
+
+  .report-body h3 {
+    margin: 20px 0 8px;
+    color: var(--accent);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0; }
+  .kv dt { color: var(--text-dim); }
+  .kv dd { margin: 0; }
+
+  .feeds { width: 100%; border-collapse: collapse; }
+  .feeds td { padding: 4px 0; vertical-align: top; }
+  .feed-cat { width: 5.5em; color: var(--text-dim); }
+  .stat-ok { text-align: right; white-space: nowrap; }
+  .stat-ng { text-align: right; color: var(--warn); overflow-wrap: anywhere; }
+
+  .spec { margin: 0; padding-left: 1.2em; color: var(--text-dim); }
+  .spec li { margin-bottom: 4px; }
+
   footer {
     padding-top: 24px;
     color: var(--text-dim);
@@ -168,6 +249,7 @@ function renderPage(items, builtAt, badge) {
     <main>
 ${items.map(renderArticle).join('\n')}
     </main>
+${renderReport(report)}
 
     <footer>925-Mirai-Shinbun / GitHub Actions により自動生成</footer>
   </div>
@@ -178,7 +260,7 @@ ${items.map(renderArticle).join('\n')}
 
 const previousSeen = await loadSeen();
 console.log(`RSS を収集します（掲載済み ${Object.keys(previousSeen).length}件を除外）`);
-const { articles: collected, failures, total, skipped, retentionDays } =
+const { articles: collected, failures, feedResults, config, total, skipped, retentionDays } =
   await collectArticles(new Set(Object.keys(previousSeen)));
 
 // 全フィードが落ちた日にページを空で上書きしないよう、異常終了して前回分を残す
@@ -194,15 +276,21 @@ if (collected.length === 0) {
 }
 
 console.log('Gemini で日本語要約を作ります');
-const { articles, summarized } = await summarizeArticles(collected);
+const { articles, summarized, reason } = await summarizeArticles(collected);
 
 const badge = summarized ? 'AI要約つき' : 'AI要約なし（RSS原文）';
 const builtAt = toJstText(new Date());
+const nextSeen = mergeSeen(previousSeen, articles.map((a) => a.url), retentionDays);
+const seenCount = Object.keys(nextSeen).length;
+
 await mkdir(dirname(OUT_FILE), { recursive: true });
-await writeFile(OUT_FILE, renderPage(articles, builtAt, badge), 'utf8');
+await writeFile(OUT_FILE, renderPage(articles, builtAt, badge, {
+  builtAt, total, skipped, published: articles.length,
+  summarized, reason, model: MODEL, feedResults, config, seenCount,
+}), 'utf8');
 
 // ページを書き出せてから記録する。先に記録すると、失敗した記事が二度と出せなくなる
-const seenCount = await saveSeen(previousSeen, articles.map((a) => a.url), retentionDays);
+await writeSeen(nextSeen);
 
 console.log(`生成しました: ${OUT_FILE}`);
 console.log(`ビルド時刻 (JST): ${builtAt}`);

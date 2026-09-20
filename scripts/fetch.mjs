@@ -111,13 +111,16 @@ export async function collectArticles(seenUrls = new Set()) {
 
   const collected = [];
   const failures = [];
+  const feedResults = [];
   results.forEach((r, i) => {
     const feed = config.feeds[i];
     if (r.status === 'fulfilled') {
       collected.push(...r.value);
+      feedResults.push({ ...feed, ok: true, count: r.value.length });
       console.log(`  OK   ${feed.name} … ${r.value.length}件`);
     } else {
       failures.push(feed.name);
+      feedResults.push({ ...feed, ok: false, error: r.reason.message });
       console.log(`  NG   ${feed.name} … ${r.reason.message}`);
     }
   });
@@ -148,6 +151,8 @@ export async function collectArticles(seenUrls = new Set()) {
   return {
     articles: balanced.slice(0, config.maxItems),
     failures,
+    feedResults,
+    config,
     total: collected.length,
     skipped,
     retentionDays: config.seenRetentionDays,
