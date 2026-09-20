@@ -148,13 +148,24 @@ export async function collectArticles(seenUrls = new Set()) {
     return true;
   });
 
+  const articles = balanced.slice(0, config.maxItems);
+
   return {
-    articles: balanced.slice(0, config.maxItems),
+    articles,
     failures,
     feedResults,
     config,
     total: collected.length,
     skipped,
     retentionDays: config.seenRetentionDays,
+    // 1385件→28件の間で何が起きたかを画面に出すための段階別件数
+    stages: [
+      ['RSSから取得', collected.length],
+      [`${config.maxAgeHours}時間以内`, fresh.length],
+      ['重複を除く', unique.length],
+      ['掲載済みを除く', unseen.length],
+      [`1媒体${config.maxPerSource}件まで`, balanced.length],
+      ['掲載', articles.length],
+    ],
   };
 }

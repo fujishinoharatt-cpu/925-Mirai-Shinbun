@@ -55,8 +55,14 @@ function renderReport(r) {
           </tr>`).join('');
 
   const ai = r.summarized
-    ? `${escapeHtml(r.model)} で要約`
+    ? `${escapeHtml(r.model)} に ${r.published}件をまとめて1回`
     : `要約なし（${escapeHtml(r.reason)}）`;
+
+  const stageRows = r.stages.map(([label, count], i) => `
+            <tr>
+              <td class="stage-label">${i > 0 ? '↓ ' : ''}${escapeHtml(label)}</td>
+              <td class="stage-count">${count}件</td>
+            </tr>`).join('');
 
   return `
       <details class="report">
@@ -65,12 +71,13 @@ function renderReport(r) {
           <h3>今朝の実行結果</h3>
           <dl class="kv">
             <dt>実行時刻</dt><dd>${escapeHtml(r.builtAt)}</dd>
-            <dt>取得した記事</dt><dd>${r.total}件</dd>
-            <dt>掲載済みとして除外</dt><dd>${r.skipped}件</dd>
-            <dt>掲載</dt><dd>${r.published}件</dd>
             <dt>AI要約</dt><dd>${ai}</dd>
             <dt>掲載済みの記録</dt><dd>${r.seenCount}件</dd>
           </dl>
+
+          <h3>絞り込みの内訳</h3>
+          <table class="stages">${stageRows}
+          </table>
 
           <h3>取得元 ${r.feedResults.length}サイト</h3>
           <table class="feeds">${feedRows}
@@ -195,7 +202,7 @@ function renderPage(items, builtAt, badge, report) {
   .card-date { margin-left: 10px; color: var(--text-dim); font-size: 0.75rem; }
 
   .report {
-    margin-top: 24px;
+    margin-bottom: 20px;
     border: 1px solid var(--border);
     border-radius: 16px;
     background: var(--surface);
@@ -220,6 +227,13 @@ function renderPage(items, builtAt, badge, report) {
   .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0; }
   .kv dt { color: var(--text-dim); }
   .kv dd { margin: 0; }
+
+  .stages { width: 100%; border-collapse: collapse; }
+  .stages td { padding: 3px 0; }
+  .stage-label { color: var(--text-dim); }
+  .stage-count { text-align: right; white-space: nowrap; }
+  .stages tr:last-child .stage-label,
+  .stages tr:last-child .stage-count { color: var(--text); font-weight: 600; }
 
   .feeds { width: 100%; border-collapse: collapse; }
   .feeds td { padding: 4px 0; vertical-align: top; }
@@ -246,10 +260,11 @@ function renderPage(items, builtAt, badge, report) {
       <span class="step-badge">${escapeHtml(badge)}</span>
     </header>
 
+${renderReport(report)}
+
     <main>
 ${items.map(renderArticle).join('\n')}
     </main>
-${renderReport(report)}
 
     <footer>925-Mirai-Shinbun / GitHub Actions により自動生成</footer>
   </div>
@@ -260,7 +275,7 @@ ${renderReport(report)}
 
 const previousSeen = await loadSeen();
 console.log(`RSS を収集します（掲載済み ${Object.keys(previousSeen).length}件を除外）`);
-const { articles: collected, failures, feedResults, config, total, skipped, retentionDays } =
+const { articles: collected, failures, feedResults, config, total, skipped, retentionDays, stages } =
   await collectArticles(new Set(Object.keys(previousSeen)));
 
 // 全フィードが落ちた日にページを空で上書きしないよう、異常終了して前回分を残す
@@ -285,7 +300,7 @@ const seenCount = Object.keys(nextSeen).length;
 
 await mkdir(dirname(OUT_FILE), { recursive: true });
 await writeFile(OUT_FILE, renderPage(articles, builtAt, badge, {
-  builtAt, total, skipped, published: articles.length,
+  builtAt, total, skipped, published: articles.length, stages,
   summarized, reason, model: MODEL, feedResults, config, seenCount,
 }), 'utf8');
 
