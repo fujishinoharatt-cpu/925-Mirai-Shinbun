@@ -1,8 +1,9 @@
 // 未来新聞 — Gemini による日本語要約
 // 記事ごとに呼ぶと回数が増えるため、全記事を1リクエストにまとめて1日1回だけ呼ぶ
 
-// モデルを変えたいときはここを書き換える
-const MODEL = 'gemini-2.5-flash';
+// モデルを変えたいときはここを書き換える。
+// 提供終了したモデルを指定すると、API が後継モデル名を含む 404 を返すのでログで分かる
+const MODEL = 'gemini-3.6-flash';
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 const TIMEOUT_MS = 60000;
 
