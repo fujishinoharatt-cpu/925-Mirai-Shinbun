@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectArticles } from './fetch.mjs';
 import { summarizeArticles } from './summarize.mjs';
+import { loadSeen, saveSeen } from './seen.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_FILE = join(ROOT, 'docs', 'index.html');
@@ -175,13 +176,21 @@ ${items.map(renderArticle).join('\n')}
 `;
 }
 
-console.log('RSS を収集します');
-const { articles: collected, failures, total } = await collectArticles();
+const previousSeen = await loadSeen();
+console.log(`RSS を収集します（掲載済み ${Object.keys(previousSeen).length}件を除外）`);
+const { articles: collected, failures, total, skipped, retentionDays } =
+  await collectArticles(new Set(Object.keys(previousSeen)));
 
-// 全滅時にページを空で上書きしないよう、ここで異常終了させて前回分を残す
-if (collected.length === 0) {
-  console.error('記事を1件も取得できませんでした。ページは更新しません。');
+// 全フィードが落ちた日にページを空で上書きしないよう、異常終了して前回分を残す
+if (total === 0) {
+  console.error('どのフィードからも記事を取得できませんでした。ページは更新しません。');
   process.exit(1);
+}
+
+// 取得はできたが新着が無い日は、正常終了して前回のページをそのまま残す
+if (collected.length === 0) {
+  console.log(`新着記事はありませんでした（掲載済みとして ${skipped}件を除外）。ページは据え置きます。`);
+  process.exit(0);
 }
 
 console.log('Gemini で日本語要約を作ります');
@@ -192,6 +201,10 @@ const builtAt = toJstText(new Date());
 await mkdir(dirname(OUT_FILE), { recursive: true });
 await writeFile(OUT_FILE, renderPage(articles, builtAt, badge), 'utf8');
 
+// ページを書き出せてから記録する。先に記録すると、失敗した記事が二度と出せなくなる
+const seenCount = await saveSeen(previousSeen, articles.map((a) => a.url), retentionDays);
+
 console.log(`生成しました: ${OUT_FILE}`);
 console.log(`ビルド時刻 (JST): ${builtAt}`);
-console.log(`取得 ${total}件 → 掲載 ${articles.length}件 / 失敗フィード ${failures.length}件`);
+console.log(`取得 ${total}件 → 掲載済み除外 ${skipped}件 → 掲載 ${articles.length}件 / 失敗フィード ${failures.length}件`);
+console.log(`掲載済み記録: ${seenCount}件（${retentionDays}日で自動削除）`);

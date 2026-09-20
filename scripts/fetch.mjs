@@ -95,9 +95,19 @@ async function fetchFeed(feed) {
   return parseFeed(await res.text(), feed);
 }
 
-export async function collectArticles() {
+// 一時的な通信エラーで欠けるフィードがあるため、1度だけ取り直す
+async function fetchFeedWithRetry(feed) {
+  try {
+    return await fetchFeed(feed);
+  } catch {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    return fetchFeed(feed);
+  }
+}
+
+export async function collectArticles(seenUrls = new Set()) {
   const config = JSON.parse(await readFile(join(ROOT, 'config', 'feeds.json'), 'utf8'));
-  const results = await Promise.allSettled(config.feeds.map(fetchFeed));
+  const results = await Promise.allSettled(config.feeds.map(fetchFeedWithRetry));
 
   const collected = [];
   const failures = [];
@@ -116,20 +126,30 @@ export async function collectArticles() {
   const limit = Date.now() - config.maxAgeHours * 3600 * 1000;
   const fresh = collected.filter((a) => !a.publishedAt || a.publishedAt.getTime() >= limit);
 
-  // 同じ URL の重複を除去
-  const seen = new Set();
-  const unique = fresh.filter((a) => !seen.has(a.url) && seen.add(a.url));
+  // 今回の収集内での重複を除去
+  const inThisRun = new Set();
+  const unique = fresh.filter((a) => !inThisRun.has(a.url) && inThisRun.add(a.url));
 
-  unique.sort((a, b) => (b.publishedAt?.getTime() ?? 0) - (a.publishedAt?.getTime() ?? 0));
+  // 過去に掲載済みの記事を除外する。枠を新着で埋めたいので件数を絞る前に行う
+  const unseen = unique.filter((a) => !seenUrls.has(a.url));
+  const skipped = unique.length - unseen.length;
+
+  unseen.sort((a, b) => (b.publishedAt?.getTime() ?? 0) - (a.publishedAt?.getTime() ?? 0));
 
   // 1サイトが大量配信する日でも紙面が偏らないように、媒体ごとの本数を制限する
   const perSource = new Map();
-  const balanced = unique.filter((a) => {
+  const balanced = unseen.filter((a) => {
     const n = perSource.get(a.source) ?? 0;
     if (n >= config.maxPerSource) return false;
     perSource.set(a.source, n + 1);
     return true;
   });
 
-  return { articles: balanced.slice(0, config.maxItems), failures, total: collected.length };
+  return {
+    articles: balanced.slice(0, config.maxItems),
+    failures,
+    total: collected.length,
+    skipped,
+    retentionDays: config.seenRetentionDays,
+  };
 }

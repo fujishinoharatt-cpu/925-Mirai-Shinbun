@@ -2,6 +2,7 @@
   "maxAgeHours": 96,
   "maxItems": 28,
   "maxPerSource": 4,
+  "seenRetentionDays": 14,
   "feeds": [
     { "name": "Google AI Blog",  "category": "企業発表", "url": "https://blog.google/technology/ai/rss/" },
     { "name": "OpenAI News",     "category": "企業発表", "url": "https://openai.com/news/rss.xml" },
