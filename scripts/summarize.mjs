@@ -58,7 +58,16 @@ async function callGemini(apiKey, articles) {
   });
 
   if (!res.ok) {
-    throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    const body = await res.text();
+    let detail = body.slice(0, 200);
+    try {
+      detail = JSON.parse(body).error?.message ?? detail; // 画面に出すので読める形にする
+    } catch {
+      /* JSON でなければ本文をそのまま使う */
+    }
+    const error = new Error(`HTTP ${res.status}: ${detail}`);
+    error.status = res.status;
+    throw error;
   }
 
   const body = await res.json();
@@ -66,6 +75,24 @@ async function callGemini(apiKey, articles) {
   if (!text) throw new Error(`応答に本文がありません: ${JSON.stringify(body).slice(0, 300)}`);
 
   return JSON.parse(text);
+}
+
+// 混雑やレート超過は時間をおけば直る。毎朝1回しか動かないので、
+// その1回が混雑に当たっただけで丸一日要約なしになるのを避ける
+const RETRYABLE = new Set([429, 500, 502, 503, 504]);
+const RETRY_WAITS_MS = [20000, 40000];
+
+async function callGeminiWithRetry(apiKey, articles) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await callGemini(apiKey, articles);
+    } catch (e) {
+      if (!RETRYABLE.has(e.status) || attempt >= RETRY_WAITS_MS.length) throw e;
+      const wait = RETRY_WAITS_MS[attempt];
+      console.log(`  ${e.status} のため ${wait / 1000}秒待って再試行します（${attempt + 1}回目）`);
+      await new Promise((resolve) => setTimeout(resolve, wait));
+    }
+  }
 }
 
 export async function summarizeArticles(articles) {
@@ -77,7 +104,7 @@ export async function summarizeArticles(articles) {
 
   try {
     console.log(`  ${MODEL} に ${articles.length}件をまとめて送ります`);
-    const results = await callGemini(apiKey, articles);
+    const results = await callGeminiWithRetry(apiKey, articles);
 
     const byId = new Map(results.map((r) => [r.id, r]));
     const merged = articles.map((a, i) => {
