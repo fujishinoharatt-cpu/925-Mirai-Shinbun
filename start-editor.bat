@@ -8,17 +8,18 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3000 ^| findstr LISTENING') 
 )
 
 echo.
-echo 📰 未来新聞 - 紙面管理ツール
+echo ========================================================
+echo   未来新聞 - 紙面管理ツール
+echo ========================================================
+echo ルートフォルダ: %cd%
+echo URL:              http://127.0.0.1:3000/
+echo 停止:             Ctrl+C (このコマンドプロンプトで)
+echo --------------------------------------------------------
 echo.
-echo npm パッケージをインストール中...
-call npm install express > nul 2>&1
 
-echo エディタを起動しています...
-echo ブラウザで http://localhost:3000 を開いてください
-echo.
-timeout /t 2
+npm install express > nul 2>&1
 
-start http://localhost:3000
+start http://127.0.0.1:3000/
 npm run editor
 if errorlevel 1 (
   echo [ERROR] エディタの起動に失敗しました。
