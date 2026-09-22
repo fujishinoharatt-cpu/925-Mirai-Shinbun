@@ -1,0 +1,13 @@
+{
+  "label": "動画",
+  "output": "video.html",
+  "maxAgeHours": 168,
+  "maxItems": 12,
+  "maxPerSource": 4,
+  "seenRetentionDays": 21,
+  "feeds": [
+    { "name": "Lex Fridman",       "category": "AI Podcast",   "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCJIfeSCssxSC_Dhc5s7woww" },
+    { "name": "Yannic Kilcher",    "category": "論文解説",     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCHmD-oSpV0sNfAUnpYpj8KA" },
+    { "name": "Andrej Karpathy",   "category": "深層学習",     "url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCYO_jab_esuFRV4b17AJtAw" }
+  ]
+}
