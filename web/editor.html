@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>未来新聞 - 紙面管理ツール</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    h1 { color: #333; margin-bottom: 30px; }
+    .section { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .section h2 { color: #555; margin-bottom: 20px; font-size: 18px; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+
+    .edition-card { background: #f9f9f9; border-left: 4px solid #007bff; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
+    .edition-card h3 { color: #333; margin-bottom: 10px; }
+    .channel-list { margin-left: 20px; margin-top: 10px; }
+    .channel-item { background: white; padding: 10px; margin: 8px 0; border-radius: 4px; border: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+    .channel-info { flex: 1; }
+    .channel-name { font-weight: bold; color: #333; }
+    .channel-id { font-size: 12px; color: #888; font-family: monospace; }
+    .btn-group { display: flex; gap: 8px; }
+    button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-primary:hover { background: #0056b3; }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-danger:hover { background: #c82333; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-secondary:hover { background: #5a6268; }
+    .btn-small { padding: 4px 8px; font-size: 12px; }
+
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; color: #333; font-weight: 500; }
+    input, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+    @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } }
+
+    .edition-actions { display: flex; gap: 10px; margin-top: 10px; }
+    .status { padding: 10px; border-radius: 4px; margin-bottom: 15px; }
+    .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📰 未来新聞 - 紙面管理ツール</h1>
+
+    <div id="status"></div>
+
+    <!-- 既存紙面 -->
+    <div class="section">
+      <h2>📋 既存紙面</h2>
+      <div id="editions-list"></div>
+    </div>
+
+    <!-- 新しい紙面を作成 -->
+    <div class="section">
+      <h2>➕ 新しい紙面を作成</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>紙面ID（英数字）:</label>
+          <input type="text" id="newEditionId" placeholder="sports">
+        </div>
+        <div class="form-group">
+          <label>紙面名（日本語）:</label>
+          <input type="text" id="newEditionLabel" placeholder="スポーツ">
+        </div>
+        <div class="form-group">
+          <label></label>
+          <button class="btn-primary" onclick="createEdition()">紙面を作成</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- チャンネルを追加 -->
+    <div class="section" id="add-channel-section" style="display:none;">
+      <h2>➕ チャンネルを追加</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>チャンネル名:</label>
+          <input type="text" id="channelName" placeholder="NHK ニュース">
+        </div>
+        <div class="form-group">
+          <label>Channel ID:</label>
+          <input type="text" id="channelId" placeholder="UCxxxxxxxxxxxxxx">
+        </div>
+        <div class="form-group">
+          <label>カテゴリ:</label>
+          <input type="text" id="channelCategory" placeholder="ニュース">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="addChannelToEdition()">チャンネルを追加</button>
+      <button class="btn-secondary" onclick="cancelAddChannel()">キャンセル</button>
+    </div>
+  </div>
+
+  <script>
+    let editionsData = null;
+    let currentEditingEdition = null;
+
+    async function loadEditions() {
+      try {
+        const res = await fetch('/api/editions');
+        editionsData = await res.json();
+        renderEditions();
+      } catch (e) {
+        showStatus('設定を読み込めません: ' + e.message, 'error');
+      }
+    }
+
+    function renderEditions() {
+      const list = document.getElementById('editions-list');
+      list.innerHTML = '';
+
+      if (!editionsData || !editionsData.editions) return;
+
+      for (const editionId of editionsData.editions) {
+        const edition = editionsData[editionId];
+        if (!edition) continue;
+
+        const card = document.createElement('div');
+        card.className = 'edition-card';
+        card.innerHTML = `
+          <h3>${edition.label}</h3>
+          <div class="channel-list" id="channels-${editionId}"></div>
+          <div class="edition-actions">
+            <button class="btn-primary btn-small" onclick="startAddChannel('${editionId}')">チャンネルを追加</button>
+            <button class="btn-danger btn-small" onclick="deleteEdition('${editionId}')">紙面を削除</button>
+          </div>
+        `;
+        list.appendChild(card);
+
+        // チャンネルをレンダリング
+        const channelList = document.getElementById(`channels-${editionId}`);
+        if (edition.feeds && edition.feeds.length > 0) {
+          for (const feed of edition.feeds) {
+            const item = document.createElement('div');
+            item.className = 'channel-item';
+            item.innerHTML = `
+              <div class="channel-info">
+                <div class="channel-name">${feed.name}</div>
+                <div class="channel-id">${feed.channelId}</div>
+              </div>
+              <div class="btn-group">
+                <button class="btn-danger btn-small" onclick="deleteChannel('${editionId}', '${feed.channelId}')">削除</button>
+              </div>
+            `;
+            channelList.appendChild(item);
+          }
+        }
+      }
+    }
+
+    function startAddChannel(editionId) {
+      currentEditingEdition = editionId;
+      document.getElementById('add-channel-section').style.display = 'block';
+      document.getElementById('channelName').value = '';
+      document.getElementById('channelId').value = '';
+      document.getElementById('channelCategory').value = '';
+      document.getElementById('channelName').focus();
+    }
+
+    function cancelAddChannel() {
+      document.getElementById('add-channel-section').style.display = 'none';
+      currentEditingEdition = null;
+    }
+
+    async function createEdition() {
+      const id = document.getElementById('newEditionId').value.trim();
+      const label = document.getElementById('newEditionLabel').value.trim();
+
+      if (!id || !label) {
+        showStatus('紙面ID と紙面名を入力してください', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/editions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, label })
+        });
+
+        if (res.ok) {
+          await loadEditions();
+          document.getElementById('newEditionId').value = '';
+          document.getElementById('newEditionLabel').value = '';
+          showStatus(`紙面「${label}」を作成しました`, 'success');
+        } else {
+          showStatus('紙面の作成に失敗しました', 'error');
+        }
+      } catch (e) {
+        showStatus('エラー: ' + e.message, 'error');
+      }
+    }
+
+    async function addChannelToEdition() {
+      const name = document.getElementById('channelName').value.trim();
+      const channelId = document.getElementById('channelId').value.trim();
+      const category = document.getElementById('channelCategory').value.trim();
+
+      if (!name || !channelId || !category) {
+        showStatus('すべてのフィールドを入力してください', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/editions/${currentEditingEdition}/channels`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, channelId, category })
+        });
+
+        if (res.ok) {
+          await loadEditions();
+          cancelAddChannel();
+          showStatus('チャンネルを追加しました', 'success');
+        } else {
+          showStatus('チャンネルの追加に失敗しました', 'error');
+        }
+      } catch (e) {
+        showStatus('エラー: ' + e.message, 'error');
+      }
+    }
+
+    async function deleteChannel(editionId, channelId) {
+      if (!confirm('このチャンネルを削除しますか？')) return;
+
+      try {
+        const res = await fetch(`/api/editions/${editionId}/channels/${channelId}`, {
+          method: 'DELETE'
+        });
+
+        if (res.ok) {
+          await loadEditions();
+          showStatus('チャンネルを削除しました', 'success');
+        } else {
+          showStatus('削除に失敗しました', 'error');
+        }
+      } catch (e) {
+        showStatus('エラー: ' + e.message, 'error');
+      }
+    }
+
+    async function deleteEdition(editionId) {
+      if (!confirm('この紙面を削除しますか？')) return;
+
+      try {
+        const res = await fetch(`/api/editions/${editionId}`, {
+          method: 'DELETE'
+        });
+
+        if (res.ok) {
+          await loadEditions();
+          showStatus('紙面を削除しました', 'success');
+        } else {
+          showStatus('削除に失敗しました', 'error');
+        }
+      } catch (e) {
+        showStatus('エラー: ' + e.message, 'error');
+      }
+    }
+
+    function showStatus(message, type) {
+      const status = document.getElementById('status');
+      status.textContent = message;
+      status.className = 'status ' + type;
+      setTimeout(() => { status.textContent = ''; status.className = ''; }, 5000);
+    }
+
+    loadEditions();
+  </script>
+</body>
+</html>

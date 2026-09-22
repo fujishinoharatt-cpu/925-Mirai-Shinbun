@@ -4,9 +4,11 @@
   "description": "未来新聞 - AI と YouTube を使ったニュース紙面生成",
   "type": "module",
   "scripts": {
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "editor": "node scripts/start-editor.mjs"
   },
   "dependencies": {
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1"
   }
 }
