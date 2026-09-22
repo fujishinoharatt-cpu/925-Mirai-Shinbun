@@ -8,6 +8,7 @@
   "feeds": [
     { "name": "たてはま / CGBeginner", "category": "CG映像", "type": "youtube", "channelId": "UCBevyiJ2ierZY-0yZhfLrmQ" },
     { "name": "ゆっくり情報科学", "category": "テクノロジー", "type": "youtube", "channelId": "UCaLCN5nUe7T6LVZwu6NV2xA" },
-    { "name": "3Blue1BrownJapan", "category": "AI", "type": "youtube", "channelId": "UCBevyiJ2ierZY-0yZhfLrmQ" }
+    { "name": "3Blue1BrownJapan", "category": "AI", "type": "youtube", "channelId": "UCBevyiJ2ierZY-0yZhfLrmQ" },
+    { "name": "にゃんたのAI", "category": "CG映像", "type": "youtube", "channelId": "UCZQVTC3uLCyuJUOcRlguazA" }
   ]
 }
