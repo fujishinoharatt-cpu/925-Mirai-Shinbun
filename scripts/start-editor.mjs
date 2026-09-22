@@ -8,9 +8,15 @@ const app = express();
 const PORT = 3000;
 
 const CONFIG_DIR = join(__dirname, '..', 'config');
+const WEB_DIR = join(__dirname, '..', 'web');
 
 app.use(express.json());
-app.use(express.static(join(__dirname, '..', 'web')));
+app.use(express.static(WEB_DIR));
+
+// ルートアクセスで editor.html を返す
+app.get('/', (req, res) => {
+  res.sendFile(join(WEB_DIR, 'editor.html'));
+});
 
 // 全紙面データを読み込む
 function loadAllEditions() {
