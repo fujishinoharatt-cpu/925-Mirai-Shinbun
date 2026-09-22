@@ -1,4 +1,6 @@
 {
+  "label": "AI・技術",
+  "output": "index.html",
   "maxAgeHours": 96,
   "maxItems": 28,
   "maxPerSource": 4,

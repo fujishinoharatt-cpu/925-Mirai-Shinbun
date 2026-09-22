@@ -1,11 +1,6 @@
 // 未来新聞 — RSS 収集
 // RSS 2.0 と Atom の両方を、外部パッケージなしで解析する
 
-import { readFile } from 'node:fs/promises';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const TIMEOUT_MS = 15000;
 
 const ENTITIES = {
@@ -57,7 +52,11 @@ function parseDate(block) {
 
 // RSS の説明文には本文URLやコメントURLが混ざる媒体があるため、URL を落としてから使う
 function summaryText(block) {
-  const raw = tagText(block, 'description') || tagText(block, 'summary') || '';
+  // media:description は YouTube の Atom が動画の説明文を入れる独自タグ
+  const raw = tagText(block, 'description')
+    || tagText(block, 'summary')
+    || tagText(block, 'media:description')
+    || '';
   const stripped = raw
     .replace(/https?:\/\/\S+/g, '')
     .replace(/\b[\w ]{0,20}URL:\s*/gi, '') // URL を消した後に残る「Article URL:」等のラベル
@@ -105,8 +104,7 @@ async function fetchFeedWithRetry(feed) {
   }
 }
 
-export async function collectArticles(seenUrls = new Set()) {
-  const config = JSON.parse(await readFile(join(ROOT, 'config', 'feeds.json'), 'utf8'));
+export async function collectArticles(config, seenUrls = new Set()) {
   const results = await Promise.allSettled(config.feeds.map(fetchFeedWithRetry));
 
   const collected = [];
@@ -125,7 +123,7 @@ export async function collectArticles(seenUrls = new Set()) {
     }
   });
 
-  // 96時間より古いものを除外（日付が取れないフィードは残す）
+  // 収集対象より古いものを除外（日付が取れないフィードは残す）
   const limit = Date.now() - config.maxAgeHours * 3600 * 1000;
   const fresh = collected.filter((a) => !a.publishedAt || a.publishedAt.getTime() >= limit);
 

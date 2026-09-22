@@ -1,0 +1,4 @@
+{
+  "_comment": "紙面を増やすときは config/edition.<id>.json を作り、この一覧に id を足す",
+  "editions": ["ai"]
+}

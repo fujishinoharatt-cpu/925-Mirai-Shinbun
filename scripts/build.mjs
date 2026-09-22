@@ -1,7 +1,7 @@
 // 未来新聞 — ページ生成スクリプト
 // RSS で集めた記事を Gemini に要約させて HTML に組み立てる
 
-import { writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectArticles } from './fetch.mjs';
@@ -9,7 +9,6 @@ import { summarizeArticles, MODEL } from './summarize.mjs';
 import { loadSeen, mergeSeen, writeSeen } from './seen.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const OUT_FILE = join(ROOT, 'docs', 'index.html');
 
 function toJstText(date) {
   return new Intl.DateTimeFormat('ja-JP', {
@@ -97,14 +96,26 @@ function renderReport(r) {
       </details>`;
 }
 
-function renderPage(items, builtAt, badge, report) {
+// 紙面が1つしかないうちはリンクを出さない
+function renderNav(editions, currentId) {
+  if (editions.length < 2) return '';
+  const links = editions.map((e) => (e.id === currentId
+    ? `<span class="nav-item nav-current">${escapeHtml(e.label)}</span>`
+    : `<a class="nav-item" href="${escapeHtml(e.output)}">${escapeHtml(e.label)}</a>`)).join('\n        ');
+  return `
+      <nav class="nav">
+        ${links}
+      </nav>`;
+}
+
+function renderPage(items, builtAt, badge, report, edition, editions) {
   return `<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0f1420">
-<title>未来新聞</title>
+<title>未来新聞 ${escapeHtml(edition.label)}</title>
 <style>
   /* 開発中テーマ: ダーク系グラスモーフィズム（Agent-T / Theme-Policy）
      運用移行時は :root の変数セットを差し替えるだけで済むようにする */
@@ -201,6 +212,25 @@ function renderPage(items, builtAt, badge, report) {
 
   .card-date { margin-left: 10px; color: var(--text-dim); font-size: 0.75rem; }
 
+  .nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .nav-item {
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    text-decoration: none;
+  }
+
+  .nav-current { background: var(--surface-hover); color: var(--text); }
+
   .report {
     margin-bottom: 20px;
     border: 1px solid var(--border);
@@ -256,8 +286,8 @@ function renderPage(items, builtAt, badge, report) {
   <div class="wrap">
     <header>
       <h1 class="title">未来新聞</h1>
-      <p class="built-at">最終更新 ${escapeHtml(builtAt)}</p>
-      <span class="step-badge">${escapeHtml(badge)}</span>
+      <p class="built-at">${escapeHtml(edition.label)}　最終更新 ${escapeHtml(builtAt)}</p>
+      <span class="step-badge">${escapeHtml(badge)}</span>${renderNav(editions, edition.id)}
     </header>
 
 ${renderReport(report)}
@@ -273,41 +303,70 @@ ${items.map(renderArticle).join('\n')}
 `;
 }
 
-const previousSeen = await loadSeen();
-console.log(`RSS を収集します（掲載済み ${Object.keys(previousSeen).length}件を除外）`);
-const { articles: collected, failures, feedResults, config, total, skipped, retentionDays, stages } =
-  await collectArticles(new Set(Object.keys(previousSeen)));
+async function buildEdition(edition, editions) {
+  const previousSeen = await loadSeen(edition.id);
+  console.log(`  RSS を収集します（掲載済み ${Object.keys(previousSeen).length}件を除外）`);
+  const { articles: collected, failures, feedResults, total, skipped, stages } =
+    await collectArticles(edition, new Set(Object.keys(previousSeen)));
 
-// 全フィードが落ちた日にページを空で上書きしないよう、異常終了して前回分を残す
-if (total === 0) {
-  console.error('どのフィードからも記事を取得できませんでした。ページは更新しません。');
-  process.exit(1);
+  // 全フィードが落ちた日にページを空で上書きしない。前回分を残す
+  if (total === 0) {
+    console.error('  どのフィードからも記事を取得できませんでした。この紙面は更新しません。');
+    return false;
+  }
+
+  // 取得はできたが新着が無い日は、前回のページをそのまま残す（異常ではない）
+  if (collected.length === 0) {
+    console.log(`  新着記事はありません（掲載済みとして ${skipped}件を除外）。据え置きます。`);
+    return true;
+  }
+
+  console.log('  Gemini で日本語要約を作ります');
+  const { articles, summarized, reason } = await summarizeArticles(collected);
+
+  const builtAt = toJstText(new Date());
+  const nextSeen = mergeSeen(previousSeen, articles.map((a) => a.url), edition.seenRetentionDays);
+  const seenCount = Object.keys(nextSeen).length;
+  const outFile = join(ROOT, 'docs', edition.output);
+
+  await mkdir(dirname(outFile), { recursive: true });
+  await writeFile(outFile, renderPage(
+    articles,
+    builtAt,
+    summarized ? 'AI要約つき' : 'AI要約なし（RSS原文）',
+    {
+      builtAt, total, skipped, published: articles.length, stages,
+      summarized, reason, model: MODEL, feedResults, config: edition, seenCount,
+    },
+    edition,
+    editions,
+  ), 'utf8');
+
+  // ページを書き出せてから記録する。先に記録すると、失敗した記事が二度と出せなくなる
+  await writeSeen(edition.id, nextSeen);
+
+  console.log(`  生成: docs/${edition.output}`);
+  console.log(`  取得 ${total}件 → 掲載済み除外 ${skipped}件 → 掲載 ${articles.length}件 / 失敗フィード ${failures.length}件`);
+  console.log(`  掲載済み記録: ${seenCount}件（${edition.seenRetentionDays}日で自動削除）`);
+  return true;
 }
 
-// 取得はできたが新着が無い日は、正常終了して前回のページをそのまま残す
-if (collected.length === 0) {
-  console.log(`新着記事はありませんでした（掲載済みとして ${skipped}件を除外）。ページは据え置きます。`);
-  process.exit(0);
+const { editions: editionIds } =
+  JSON.parse(await readFile(join(ROOT, 'config', 'editions.json'), 'utf8'));
+
+const editions = [];
+for (const id of editionIds) {
+  const config = JSON.parse(await readFile(join(ROOT, 'config', `edition.${id}.json`), 'utf8'));
+  editions.push({ id, ...config });
 }
 
-console.log('Gemini で日本語要約を作ります');
-const { articles, summarized, reason } = await summarizeArticles(collected);
+let built = 0;
+for (const edition of editions) {
+  console.log(`\n===== ${edition.label}（${edition.id}） =====`);
+  if (await buildEdition(edition, editions)) built += 1;
+}
 
-const badge = summarized ? 'AI要約つき' : 'AI要約なし（RSS原文）';
-const builtAt = toJstText(new Date());
-const nextSeen = mergeSeen(previousSeen, articles.map((a) => a.url), retentionDays);
-const seenCount = Object.keys(nextSeen).length;
+console.log(`\n${editions.length}紙面中 ${built}紙面を処理しました`);
 
-await mkdir(dirname(OUT_FILE), { recursive: true });
-await writeFile(OUT_FILE, renderPage(articles, builtAt, badge, {
-  builtAt, total, skipped, published: articles.length, stages,
-  summarized, reason, model: MODEL, feedResults, config, seenCount,
-}), 'utf8');
-
-// ページを書き出せてから記録する。先に記録すると、失敗した記事が二度と出せなくなる
-await writeSeen(nextSeen);
-
-console.log(`生成しました: ${OUT_FILE}`);
-console.log(`ビルド時刻 (JST): ${builtAt}`);
-console.log(`取得 ${total}件 → 掲載済み除外 ${skipped}件 → 掲載 ${articles.length}件 / 失敗フィード ${failures.length}件`);
-console.log(`掲載済み記録: ${seenCount}件（${retentionDays}日で自動削除）`);
+// 1紙面でも作れていれば公開する。全滅したときだけ失敗として扱う
+if (built === 0) process.exit(1);
