@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f1420">
+<title>未来新聞 動画</title>
+<style>
+  /* 開発中テーマ: ダーク系グラスモーフィズム（Agent-T / Theme-Policy）
+     運用移行時は :root の変数セットを差し替えるだけで済むようにする */
+  :root {
+    --bg: #0f1420;
+    --bg-glow: #1d2b45;
+    --surface: rgba(255, 255, 255, 0.06);
+    --surface-hover: rgba(255, 255, 255, 0.10);
+    --border: rgba(255, 255, 255, 0.12);
+    --text: #e8ecf4;
+    --text-dim: #93a0b8;
+    --accent: #6ea8ff;
+    --warn: #f0a868;
+    --shadow: rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0 16px 48px;
+    background: var(--bg);
+    background-image: radial-gradient(circle at 50% 0%, var(--bg-glow), var(--bg) 60%);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    line-height: 1.7;
+  }
+
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  header { padding: 32px 0 24px; text-align: center; }
+
+  .title {
+    margin: 0;
+    font-size: 1.75rem;
+    letter-spacing: 0.08em;
+  }
+
+  .built-at {
+    margin: 8px 0 0;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+
+  .step-badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--accent);
+    font-size: 0.75rem;
+  }
+
+  .card {
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 16px var(--shadow);
+    transition: background 0.2s;
+  }
+
+  .card:hover { background: var(--surface-hover); }
+
+  .card-link {
+    display: block;
+    padding: 20px;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .card-badge {
+    display: inline-block;
+    margin-bottom: 10px;
+    padding: 2px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+  }
+
+  /* 長い URL や英単語がはみ出して横スクロールが出るのを防ぐ */
+  .card-title, .card-summary { overflow-wrap: anywhere; }
+
+  .card-title { margin: 0 0 8px; font-size: 1.05rem; }
+
+  .card-summary { margin: 0 0 12px; color: var(--text-dim); font-size: 0.9rem; }
+
+  .card-source { color: var(--accent); font-size: 0.75rem; }
+
+  .card-date { margin-left: 10px; color: var(--text-dim); font-size: 0.75rem; }
+
+  .nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .nav-item {
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    text-decoration: none;
+  }
+
+  .nav-current { background: var(--surface-hover); color: var(--text); }
+
+  .report {
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+  }
+
+  .report summary {
+    padding: 14px 20px;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .report-body { padding: 0 20px 20px; font-size: 0.8rem; }
+
+  .report-body h3 {
+    margin: 20px 0 8px;
+    color: var(--accent);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0; }
+  .kv dt { color: var(--text-dim); }
+  .kv dd { margin: 0; }
+
+  .stages { width: 100%; border-collapse: collapse; }
+  .stages td { padding: 3px 0; }
+  .stage-label { color: var(--text-dim); }
+  .stage-count { text-align: right; white-space: nowrap; }
+  .stages tr:last-child .stage-label,
+  .stages tr:last-child .stage-count { color: var(--text); font-weight: 600; }
+
+  .feeds { width: 100%; border-collapse: collapse; }
+  .feeds td { padding: 4px 0; vertical-align: top; }
+  .feed-cat { width: 5.5em; color: var(--text-dim); }
+  .stat-ok { text-align: right; white-space: nowrap; }
+  .stat-ng { text-align: right; color: var(--warn); overflow-wrap: anywhere; }
+
+  .spec { margin: 0; padding-left: 1.2em; color: var(--text-dim); }
+  .spec li { margin-bottom: 4px; }
+
+  footer {
+    padding-top: 24px;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 class="title">未来新聞</h1>
+      <p class="built-at">動画　最終更新 2026/09/22 12:06</p>
+      <span class="step-badge">AI要約つき</span>
+      <nav class="nav">
+        <a class="nav-item" href="index.html">AI・技術</a>
+        <a class="nav-item" href="trend.html">トレンド</a>
+        <span class="nav-item nav-current">動画</span>
+      </nav>
+    </header>
+
+
+      <details class="report">
+        <summary>処理の状況</summary>
+        <div class="report-body">
+          <h3>今朝の実行結果</h3>
+          <dl class="kv">
+            <dt>実行時刻</dt><dd>2026/09/22 12:06</dd>
+            <dt>AI要約</dt><dd>gemini-3.6-flash に 6件をまとめて1回</dd>
+            <dt>掲載済みの記録</dt><dd>6件</dd>
+          </dl>
+
+          <h3>絞り込みの内訳</h3>
+          <table class="stages">
+            <tr>
+              <td class="stage-label">RSSから取得</td>
+              <td class="stage-count">40件</td>
+            </tr>
+            <tr>
+              <td class="stage-label">↓ 168時間以内</td>
+              <td class="stage-count">17件</td>
+            </tr>
+            <tr>
+              <td class="stage-label">↓ 重複を除く</td>
+              <td class="stage-count">17件</td>
+            </tr>
+            <tr>
+              <td class="stage-label">↓ 掲載済みを除く</td>
+              <td class="stage-count">17件</td>
+            </tr>
+            <tr>
+              <td class="stage-label">↓ 1媒体4件まで</td>
+              <td class="stage-count">6件</td>
+            </tr>
+            <tr>
+              <td class="stage-label">↓ 掲載</td>
+              <td class="stage-count">6件</td>
+            </tr>
+          </table>
+
+          <h3>取得元 3サイト</h3>
+          <table class="feeds">
+          <tr>
+            <td class="feed-cat">AI Podcast</td>
+            <td>Lex Fridman</td>
+            <td class="stat-ok">15件</td>
+          </tr>
+          <tr>
+            <td class="feed-cat">論文解説</td>
+            <td>Yannic Kilcher</td>
+            <td class="stat-ok">10件</td>
+          </tr>
+          <tr>
+            <td class="feed-cat">深層学習</td>
+            <td>Andrej Karpathy</td>
+            <td class="stat-ok">15件</td>
+          </tr>
+          </table>
+
+          <h3>処理の仕様</h3>
+          <ul class="spec">
+            <li>毎朝 5:30（日本時間）に GitHub Actions が自動実行</li>
+            <li>直近 168 時間以内に公開された記事が対象</li>
+            <li>1媒体あたり最大 4 件、全体で最大 12 件</li>
+            <li>一度掲載した記事は 21 日間は再掲しない</li>
+            <li>要約は全記事を1回のリクエストにまとめて送る（1日1回）</li>
+            <li>要約に失敗した日は RSS の原文を表示し、ページ自体は更新する</li>
+            <li>全サイトの取得に失敗した日は更新せず、前日の紙面を残す</li>
+          </ul>
+        </div>
+      </details>
+
+    <main>
+      <article class="card">
+        <a class="card-link" href="https://www.youtube.com/watch?v=Vvjeay358RI" target="_blank" rel="noopener">
+          <span class="card-badge">AI Podcast</span>
+          <h2 class="card-title">抗精神病薬は効果があるのか？</h2>
+          <p class="card-summary">アンドリュー・スカール氏とレックス・フリッドマン氏による対談です。抗精神病薬が実際に効果をもたらすのかどうかという問いについて話し合われています。</p>
+          <span class="card-source">Lex Fridman</span>
+          <span class="card-date">9/22 09:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.youtube.com/watch?v=1Js_al_Q8Y4" target="_blank" rel="noopener">
+          <span class="card-badge">AI Podcast</span>
+          <h2 class="card-title">精神疾患は治せるのか？精神医学の未来</h2>
+          <p class="card-summary">アンドリュー・スカール氏とレックス・フリッドマン氏による対談です。精神疾患を治すことができるのか、精神医学の未来について議論されています。</p>
+          <span class="card-source">Lex Fridman</span>
+          <span class="card-date">9/22 05:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.youtube.com/watch?v=au9u5O3Rk2Q" target="_blank" rel="noopener">
+          <span class="card-badge">AI Podcast</span>
+          <h2 class="card-title">自閉症の診断における拡大をめぐる論争</h2>
+          <p class="card-summary">アンドリュー・スカール氏とレックス・フリッドマン氏の対談です。自閉症の診断基準が拡大していることに関する論争を取り上げています。</p>
+          <span class="card-source">Lex Fridman</span>
+          <span class="card-date">9/22 01:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.youtube.com/watch?v=KOj39rCS0WU" target="_blank" rel="noopener">
+          <span class="card-badge">AI Podcast</span>
+          <h2 class="card-title">抗精神病薬の意外な起源</h2>
+          <p class="card-summary">アンドリュー・スカール氏とレックス・フリッドマン氏による対談です。抗精神病薬の驚くべき起源について話し合われています。</p>
+          <span class="card-source">Lex Fridman</span>
+          <span class="card-date">9/21 21:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.youtube.com/watch?v=bRQEWPA832A" target="_blank" rel="noopener">
+          <span class="card-badge">深層学習</span>
+          <h2 class="card-title">AIが解けなかった最後のIMO問題</h2>
+          <p class="card-summary">アンドレイ・カーパシー氏によるコンテンツです。人工知能（AI）が解決できなかった国際数学オリンピック（IMO）の最後の問題について取り上げています。</p>
+          <span class="card-source">Andrej Karpathy</span>
+          <span class="card-date">9/19 02:14</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.youtube.com/watch?v=Nbwv5wHQoj0" target="_blank" rel="noopener">
+          <span class="card-badge">深層学習</span>
+          <h2 class="card-title">AIが解決できなかった最後のIMO問題</h2>
+          <p class="card-summary">アンドレイ・カーパシー氏による投稿です。AIが解くことのできなかった国際数学オリンピック（IMO）の最後の問題について言及しています。</p>
+          <span class="card-source">Andrej Karpathy</span>
+          <span class="card-date">9/19 02:12</span>
+        </a>
+      </article>
+    </main>
+
+    <footer>925-Mirai-Shinbun / GitHub Actions により自動生成</footer>
+  </div>
+</body>
+</html>

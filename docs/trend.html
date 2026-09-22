@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f1420">
+<title>未来新聞 トレンド</title>
+<style>
+  /* 開発中テーマ: ダーク系グラスモーフィズム（Agent-T / Theme-Policy）
+     運用移行時は :root の変数セットを差し替えるだけで済むようにする */
+  :root {
+    --bg: #0f1420;
+    --bg-glow: #1d2b45;
+    --surface: rgba(255, 255, 255, 0.06);
+    --surface-hover: rgba(255, 255, 255, 0.10);
+    --border: rgba(255, 255, 255, 0.12);
+    --text: #e8ecf4;
+    --text-dim: #93a0b8;
+    --accent: #6ea8ff;
+    --warn: #f0a868;
+    --shadow: rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0 16px 48px;
+    background: var(--bg);
+    background-image: radial-gradient(circle at 50% 0%, var(--bg-glow), var(--bg) 60%);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    line-height: 1.7;
+  }
+
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  header { padding: 32px 0 24px; text-align: center; }
+
+  .title {
+    margin: 0;
+    font-size: 1.75rem;
+    letter-spacing: 0.08em;
+  }
+
+  .built-at {
+    margin: 8px 0 0;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+
+  .step-badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--accent);
+    font-size: 0.75rem;
+  }
+
+  .card {
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 16px var(--shadow);
+    transition: background 0.2s;
+  }
+
+  .card:hover { background: var(--surface-hover); }
+
+  .card-link {
+    display: block;
+    padding: 20px;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .card-badge {
+    display: inline-block;
+    margin-bottom: 10px;
+    padding: 2px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+  }
+
+  /* 長い URL や英単語がはみ出して横スクロールが出るのを防ぐ */
+  .card-title, .card-summary { overflow-wrap: anywhere; }
+
+  .card-title { margin: 0 0 8px; font-size: 1.05rem; }
+
+  .card-summary { margin: 0 0 12px; color: var(--text-dim); font-size: 0.9rem; }
+
+  .card-source { color: var(--accent); font-size: 0.75rem; }
+
+  .card-date { margin-left: 10px; color: var(--text-dim); font-size: 0.75rem; }
+
+  .nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .nav-item {
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    text-decoration: none;
+  }
+
+  .nav-current { background: var(--surface-hover); color: var(--text); }
+
+  .report {
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+  }
+
+  .report summary {
+    padding: 14px 20px;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .report-body { padding: 0 20px 20px; font-size: 0.8rem; }
+
+  .report-body h3 {
+    margin: 20px 0 8px;
+    color: var(--accent);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0; }
+  .kv dt { color: var(--text-dim); }
+  .kv dd { margin: 0; }
+
+  .stages { width: 100%; border-collapse: collapse; }
+  .stages td { padding: 3px 0; }
+  .stage-label { color: var(--text-dim); }
+  .stage-count { text-align: right; white-space: nowrap; }
+  .stages tr:last-child .stage-label,
+  .stages tr:last-child .stage-count { color: var(--text); font-weight: 600; }
+
+  .feeds { width: 100%; border-collapse: collapse; }
+  .feeds td { padding: 4px 0; vertical-align: top; }
+  .feed-cat { width: 5.5em; color: var(--text-dim); }
+  .stat-ok { text-align: right; white-space: nowrap; }
+  .stat-ng { text-align: right; color: var(--warn); overflow-wrap: anywhere; }
+
+  .spec { margin: 0; padding-left: 1.2em; color: var(--text-dim); }
+  .spec li { margin-bottom: 4px; }
+
+  footer {
+    padding-top: 24px;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 class="title">未来新聞</h1>
+      <p class="built-at">トレンド　最終更新 2026/09/22 12:05</p>
+      <span class="step-badge">AI要約つき</span>
+      <nav class="nav">
+        <a class="nav-item" href="index.html">AI・技術</a>
+        <span class="nav-item nav-current">トレンド</span>
+        <a class="nav-item" href="video.html">動画</a>
+      </nav>
+    </header>
+
+
+      <details class="report">
+        <summary>処理の状況</summary>
+        <div class="report-body">
+          <h3>今朝の実行結果</h3>
+          <dl class="kv">
+            <dt>実行時刻</dt><dd>2026/09/22 12:05</dd>
+            <dt>AI要約</dt><dd>gemini-3.6-flash に 20件をまとめて1回</dd>
+            <dt>掲載済みの記録</dt><dd>20件</dd>
+          </dl>
+
+          <h3>絞り込みの内訳</h3>
+          <table class="stages">
+            <tr>
+              <td class="stage-label">RSSから取得</td>
+              <td class="stage-count">20件</td>
+            </tr>
+            <tr>
+              <td class="stage-label">↓ 96時間以内</td>
+              <td class="stage-count">20件</td>
+            </tr>
+            <tr>
+              <td class="stage-label">↓ 重複を除く</td>
+              <td class="stage-count">20件</td>
+            </tr>
+            <tr>
+              <td class="stage-label">↓ 掲載済みを除く</td>
+              <td class="stage-count">20件</td>
+            </tr>
+            <tr>
+              <td class="stage-label">↓ 1媒体20件まで</td>
+              <td class="stage-count">20件</td>
+            </tr>
+            <tr>
+              <td class="stage-label">↓ 掲載</td>
+              <td class="stage-count">20件</td>
+            </tr>
+          </table>
+
+          <h3>取得元 1サイト</h3>
+          <table class="feeds">
+          <tr>
+            <td class="feed-cat">テック</td>
+            <td>GIZMODO Japan</td>
+            <td class="stat-ok">20件</td>
+          </tr>
+          </table>
+
+          <h3>処理の仕様</h3>
+          <ul class="spec">
+            <li>毎朝 5:30（日本時間）に GitHub Actions が自動実行</li>
+            <li>直近 96 時間以内に公開された記事が対象</li>
+            <li>1媒体あたり最大 20 件、全体で最大 20 件</li>
+            <li>一度掲載した記事は 7 日間は再掲しない</li>
+            <li>要約は全記事を1回のリクエストにまとめて送る（1日1回）</li>
+            <li>要約に失敗した日は RSS の原文を表示し、ページ自体は更新する</li>
+            <li>全サイトの取得に失敗した日は更新せず、前日の紙面を残す</li>
+          </ul>
+        </div>
+      </details>
+
+    <main>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/2609-iphone-duo-wallpapers-download/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">「iPhone Duo」の純正壁紙がダウンロード可能に</h2>
+          <p class="card-summary">発売前の「iPhone Duo」の気分を体験できる公式開発ツールから見つかった、純正壁紙の入手先やダウンロード方法が紹介されています。画面を最新のデザインに着せ替えることができます。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/22 12:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/unique_smartphones-ruu/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">ゲーム特化やロボット化など春登場のユニークなスマホ</h2>
+          <p class="card-summary">ゲーム特化型やロボット化された端末など、一味違う特徴を持ったスマートフォンがこの春に登場しました。従来のスマートフォンの枠にとらわれない独自の進化を遂げたモデルが揃っています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/22 11:35</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/2609-steam-frame-review/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">約20万円のVRヘッドセット「Steam Frame」レビュー</h2>
+          <p class="card-summary">ゲーム特化型VRヘッドセット「Steam Frame」のレビューが公開されました。圧倒的な軽さと快適な装着感を備え、最高のPC VRストリーミング体験ができる魅力などを徹底解説しています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/22 11:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/2609-apple-tech-woven-case-1-year-review/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">Apple純正テックウーブンケースを1年間使用したレビュー</h2>
+          <p class="card-summary">10,800円で販売されているApple純正のテックウーブンケースを1年間使用したレビューです。1万円の価値や耐久性、実際の劣化具合について徹底解説されています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/22 10:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/2609-we-are-rewind-eq-002-headphone/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">80年代風デザインのUSB-C対応ヘッドホン「EQ-002」</h2>
+          <p class="card-summary">レトロな80年代風デザインと現代のワイヤレス性能を合わせた「EQ-002」ヘッドホンが登場しました。軽量で低音に優れており、最大14時間のバッテリーを搭載しています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/22 08:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/mitsuoka-la1-opencar/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">ミツオカがヴィンテージ風の新型オープンカー「LA1」を発表</h2>
+          <p class="card-summary">ミツオカがヴィンテージ風のおおらかな雰囲気を持つ新型オープンカー「LA1」を発表しました。クラシカルなデザインと安心感を兼ね備えたグラマラスなモデルで、ティザーサイトも公開されています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/22 07:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/leap-seconds-were-a-headache-now-timekeepers-are-considering-a-leap-hour-vqz/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">地球の自転加速で「うるう秒」廃止と「うるう時間」の検討へ</h2>
+          <p class="card-summary">地球の自転速度が変化する中で、時間のズレを修正する「うるう秒」が廃止されました。自転が速くなりつつある現在、大幅なズレを修正するために「うるう時間」への変更も検討されています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/21 23:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/mizuno_wave-rider-30-2/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">ミズノがランニングシューズ「WAVE RIDER」新作発表</h2>
+          <p class="card-summary">ミズノから多様化するランニングスタイルに応えるシューズ「WAVE RIDER 30.1/30.2」が発表されました。ランニングと日常をつなぐ一足として展開されています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/21 22:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/musk-wants-a-self-growing-moon-city-in-10-years-heres-when-the-water-runs-out/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">人類の月移住に向けた課題、水資源の枯渇リスク</h2>
+          <p class="card-summary">宇宙開発が進み月移住などの構想が注目される一方、最大の課題として水資源の問題が挙げられます。100万人が移住した場合、2年で水資源が枯渇する可能性が指摘されています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/21 21:30</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/google-may-finally-release-laptops-you-cant-just-ignore/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">Aluminium OS採用の「Googlebook」が登場予定</h2>
+          <p class="card-summary">GoogleがデスクトップOSとして再設計した「Aluminium OS」を採用する「Googlebook」が各メーカーから発売予定です。プレミアム性能を備えるとされています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/21 21:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/ai_safety_collaboration_antitrust/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">OpenAIやGoogleらがAI安全性で協力模索も課題</h2>
+          <p class="card-summary">AI開発の規制や減速を求める声が高まる中、OpenAIは競合であるAnthropicやGoogle DeepMindとAIの安全性について協力に向けた協議を行っています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/21 20:30</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/kumazakiaim-anshin-rec/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">10秒で簡単に着脱できる自転車用ドライブレコーダー</h2>
+          <p class="card-summary">煽り運転や事故の証拠残しとして自転車にもドライブレコーダーが必要視されています。10秒で着脱できる自転車用ドライブレコーダーが登場し注目を集めています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/21 20:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/acer-ep0/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">エイサーからタッチ操作対応の13.3インチ電子ペーパー</h2>
+          <p class="card-summary">エイサーから13.3インチのタッチ操作対応電子ペーパーが発表されました。紙のような質感で、画面の眩しさやバッテリー持ちの悩みを解消するタブレットとなっています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/21 19:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/2609-oxtak-money-penny-ai-voice-recorder/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">録音から要約まで可能なAIボイスレコーダー「Oxtak」</h2>
+          <p class="card-summary">AIボイスレコーダー「Oxtak」は、スマホアプリを開かずに録音から自動要約までを行えます。97言語の翻訳機能や高いセキュリティも備えています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/21 18:30</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/yashica-y16-pocket-camera/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">ヤシカの名機「Y16」がデジタルカメラとして復刻</h2>
+          <p class="card-summary">1950年代に登場したヤシカのカメラ「Y16」がデジタルカメラとして復刻されます。現在ヤシカブランドを持つ香港の企業が、現代的なカメラとして手掛けています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/21 18:15</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/smart-glasses-privacy-zuckoff/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">スマートグラスの盗撮防止アプリ「ZuckOff」が拡大</h2>
+          <p class="card-summary">カメラ付きスマートグラスの存在を知らせる盗撮防止アプリ「ZuckOff」が登場しました。App Storeでの公開から約1カ月で利用者が5,000人に達しています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/21 18:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/camp-snap-110d-camera/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">レトロなトイカメラ「Camp Snap 110D」予約受付中</h2>
+          <p class="card-summary">ディスプレイがないシンプルなデジタルトイカメラ「Camp Snap 110D camera」が予約を開始しました。細身でレトロなデザインが特徴のモデルです。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/21 17:15</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/syncere-lume/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">家事手伝いを行う照明器具風のロボット・アーム登場</h2>
+          <p class="card-summary">人型ロボットが家事をこなす開発が進む中、一見照明器具のようなデザインのロボット・アームが登場しました。住居内で軽作業をこなす新しい家事手伝いロボットです。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/21 17:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/oddly-satisfying-just-right-feeling/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">台風大接近の日に見る「Oddly satisfying」動画</h2>
+          <p class="card-summary">大型で強い台風が関東へ近づき雨風が強まる中、心を落ち着かせる小休止として「Oddly satisfying」動画を見ることが提案されています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/21 16:15</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.gizmodo.jp/article/ai-datacenter-ewaste-wave/" target="_blank" rel="noopener">
+          <span class="card-badge">テック</span>
+          <h2 class="card-title">AIデータセンターの電子廃棄物が想定の40〜60倍との試算</h2>
+          <p class="card-summary">国際NGOの報告書によると、AIデータセンターから発生する電子廃棄物が想定の40〜60倍に上るという試算が公開され、廃棄物問題が懸念されています。</p>
+          <span class="card-source">GIZMODO Japan</span>
+          <span class="card-date">9/21 15:00</span>
+        </a>
+      </article>
+    </main>
+
+    <footer>925-Mirai-Shinbun / GitHub Actions により自動生成</footer>
+  </div>
+</body>
+</html>

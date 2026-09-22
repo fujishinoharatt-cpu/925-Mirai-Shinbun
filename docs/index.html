@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f1420">
+<title>未来新聞 AI・技術</title>
+<style>
+  /* 開発中テーマ: ダーク系グラスモーフィズム（Agent-T / Theme-Policy）
+     運用移行時は :root の変数セットを差し替えるだけで済むようにする */
+  :root {
+    --bg: #0f1420;
+    --bg-glow: #1d2b45;
+    --surface: rgba(255, 255, 255, 0.06);
+    --surface-hover: rgba(255, 255, 255, 0.10);
+    --border: rgba(255, 255, 255, 0.12);
+    --text: #e8ecf4;
+    --text-dim: #93a0b8;
+    --accent: #6ea8ff;
+    --warn: #f0a868;
+    --shadow: rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0 16px 48px;
+    background: var(--bg);
+    background-image: radial-gradient(circle at 50% 0%, var(--bg-glow), var(--bg) 60%);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    line-height: 1.7;
+  }
+
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  header { padding: 32px 0 24px; text-align: center; }
+
+  .title {
+    margin: 0;
+    font-size: 1.75rem;
+    letter-spacing: 0.08em;
+  }
+
+  .built-at {
+    margin: 8px 0 0;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+
+  .step-badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--accent);
+    font-size: 0.75rem;
+  }
+
+  .card {
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 16px var(--shadow);
+    transition: background 0.2s;
+  }
+
+  .card:hover { background: var(--surface-hover); }
+
+  .card-link {
+    display: block;
+    padding: 20px;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .card-badge {
+    display: inline-block;
+    margin-bottom: 10px;
+    padding: 2px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+  }
+
+  /* 長い URL や英単語がはみ出して横スクロールが出るのを防ぐ */
+  .card-title, .card-summary { overflow-wrap: anywhere; }
+
+  .card-title { margin: 0 0 8px; font-size: 1.05rem; }
+
+  .card-summary { margin: 0 0 12px; color: var(--text-dim); font-size: 0.9rem; }
+
+  .card-source { color: var(--accent); font-size: 0.75rem; }
+
+  .card-date { margin-left: 10px; color: var(--text-dim); font-size: 0.75rem; }
+
+  .nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .nav-item {
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    text-decoration: none;
+  }
+
+  .nav-current { background: var(--surface-hover); color: var(--text); }
+
+  .report {
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+  }
+
+  .report summary {
+    padding: 14px 20px;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .report-body { padding: 0 20px 20px; font-size: 0.8rem; }
+
+  .report-body h3 {
+    margin: 20px 0 8px;
+    color: var(--accent);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0; }
+  .kv dt { color: var(--text-dim); }
+  .kv dd { margin: 0; }
+
+  .stages { width: 100%; border-collapse: collapse; }
+  .stages td { padding: 3px 0; }
+  .stage-label { color: var(--text-dim); }
+  .stage-count { text-align: right; white-space: nowrap; }
+  .stages tr:last-child .stage-label,
+  .stages tr:last-child .stage-count { color: var(--text); font-weight: 600; }
+
+  .feeds { width: 100%; border-collapse: collapse; }
+  .feeds td { padding: 4px 0; vertical-align: top; }
+  .feed-cat { width: 5.5em; color: var(--text-dim); }
+  .stat-ok { text-align: right; white-space: nowrap; }
+  .stat-ng { text-align: right; color: var(--warn); overflow-wrap: anywhere; }
+
+  .spec { margin: 0; padding-left: 1.2em; color: var(--text-dim); }
+  .spec li { margin-bottom: 4px; }
+
+  footer {
+    padding-top: 24px;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 class="title">未来新聞</h1>
+      <p class="built-at">AI・技術　最終更新 2026/09/22 12:04</p>
+      <span class="step-badge">AI要約つき</span>
+      <nav class="nav">
+        <span class="nav-item nav-current">AI・技術</span>
+        <a class="nav-item" href="trend.html">トレンド</a>
+        <a class="nav-item" href="video.html">動画</a>
+      </nav>
+    </header>
+
+
+      <details class="report">
+        <summary>処理の状況</summary>
+        <div class="report-body">
+          <h3>今朝の実行結果</h3>
+          <dl class="kv">
+            <dt>実行時刻</dt><dd>2026/09/22 12:04</dd>
+            <dt>AI要約</dt><dd>gemini-3.6-flash に 28件をまとめて1回</dd>
+            <dt>掲載済みの記録</dt><dd>28件</dd>
+          </dl>
+
+          <h3>絞り込みの内訳</h3>
+          <table class="stages">
+            <tr>
+              <td class="stage-label">RSSから取得</td>
+              <td class="stage-count">1841件</td>
+            </tr>
+            <tr>
+              <td class="stage-label">↓ 96時間以内</td>
+              <td class="stage-count">571件</td>
+            </tr>
+            <tr>
+              <td class="stage-label">↓ 重複を除く</td>
+              <td class="stage-count">522件</td>
+            </tr>
+            <tr>
+              <td class="stage-label">↓ 掲載済みを除く</td>
+              <td class="stage-count">522件</td>
+            </tr>
+            <tr>
+              <td class="stage-label">↓ 1媒体4件まで</td>
+              <td class="stage-count">40件</td>
+            </tr>
+            <tr>
+              <td class="stage-label">↓ 掲載</td>
+              <td class="stage-count">28件</td>
+            </tr>
+          </table>
+
+          <h3>取得元 12サイト</h3>
+          <table class="feeds">
+          <tr>
+            <td class="feed-cat">企業発表</td>
+            <td>Google AI Blog</td>
+            <td class="stat-ok">20件</td>
+          </tr>
+          <tr>
+            <td class="feed-cat">企業発表</td>
+            <td>OpenAI News</td>
+            <td class="stat-ok">1215件</td>
+          </tr>
+          <tr>
+            <td class="feed-cat">海外</td>
+            <td>TechCrunch AI</td>
+            <td class="stat-ok">20件</td>
+          </tr>
+          <tr>
+            <td class="feed-cat">海外</td>
+            <td>The Verge AI</td>
+            <td class="stat-ok">10件</td>
+          </tr>
+          <tr>
+            <td class="feed-cat">海外</td>
+            <td>Ars Technica</td>
+            <td class="stat-ok">20件</td>
+          </tr>
+          <tr>
+            <td class="feed-cat">国内</td>
+            <td>ITmedia AI+</td>
+            <td class="stat-ok">20件</td>
+          </tr>
+          <tr>
+            <td class="feed-cat">国内</td>
+            <td>Publickey</td>
+            <td class="stat-ok">15件</td>
+          </tr>
+          <tr>
+            <td class="feed-cat">開発者</td>
+            <td>Hacker News</td>
+            <td class="stat-ok">20件</td>
+          </tr>
+          <tr>
+            <td class="feed-cat">開発者</td>
+            <td>Zenn</td>
+            <td class="stat-ok">20件</td>
+          </tr>
+          <tr>
+            <td class="feed-cat">開発者</td>
+            <td>Qiita</td>
+            <td class="stat-ok">30件</td>
+          </tr>
+          <tr>
+            <td class="feed-cat">論文</td>
+            <td>arXiv cs.AI</td>
+            <td class="stat-ok">214件</td>
+          </tr>
+          <tr>
+            <td class="feed-cat">論文</td>
+            <td>arXiv cs.LG</td>
+            <td class="stat-ok">237件</td>
+          </tr>
+          </table>
+
+          <h3>処理の仕様</h3>
+          <ul class="spec">
+            <li>毎朝 5:30（日本時間）に GitHub Actions が自動実行</li>
+            <li>直近 96 時間以内に公開された記事が対象</li>
+            <li>1媒体あたり最大 4 件、全体で最大 28 件</li>
+            <li>一度掲載した記事は 14 日間は再掲しない</li>
+            <li>要約は全記事を1回のリクエストにまとめて送る（1日1回）</li>
+            <li>要約に失敗した日は RSS の原文を表示し、ページ自体は更新する</li>
+            <li>全サイトの取得に失敗した日は更新せず、前日の紙面を残す</li>
+          </ul>
+        </div>
+      </details>
+
+    <main>
+      <article class="card">
+        <a class="card-link" href="https://www.itmedia.co.jp/news/article/2609/22/2000001670/" target="_blank" rel="noopener">
+          <span class="card-badge">国内</span>
+          <h2 class="card-title">OpenAI、米国主導によるフロンティアAIの国際標準作成を提言</h2>
+          <p class="card-summary">OpenAIは、制御不能な自律的進化を防ぐ枠組みとして各国のAI安全性研究所の連携などを提案しました。また、米国主導での国際標準作成を提言しています。アルトマンCEOは国連安保理の公開会合で発言する予定です。</p>
+          <span class="card-source">ITmedia AI+</span>
+          <span class="card-date">9/22 10:51</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://variety.com/2026/film/news/robin-williams-daughter-ai-videos-1236871568/" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">ロビン・ウィリアムズ氏の娘がAI動画作成ファンに苦言</h2>
+          <p class="card-summary">ロビン・ウィリアムズ氏の娘が、AIを用いて動画を作成するファンに対して恥を知るよう呼びかけました。元情報の詳細が少ないため見出しの提示にとどまっています。</p>
+          <span class="card-source">Hacker News</span>
+          <span class="card-date">9/22 10:24</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://status.claude.com/incidents/7g1qpkyz5gxh" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">Claudeで障害発生、複数のモデルでエラー率が上昇</h2>
+          <p class="card-summary">AIモデルのClaudeにおいて、複数モデルでエラーの上昇が確認されています。サービスステータスにて障害状況が報告されています。</p>
+          <span class="card-source">Hacker News</span>
+          <span class="card-date">9/22 10:05</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.itmedia.co.jp/news/article/2609/22/2000001669/" target="_blank" rel="noopener">
+          <span class="card-badge">国内</span>
+          <h2 class="card-title">Amazon、MetaのAI「Muse」の代理購入をブロック</h2>
+          <p class="card-summary">Amazonはセキュリティリスクなどを理由に、MetaのAIエージェント「Muse」による代理購入をブロックしました。一方、MetaはShopify全ストアへの対応を発表し、連携拡大を進めています。</p>
+          <span class="card-source">ITmedia AI+</span>
+          <span class="card-date">9/22 09:43</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://wondermark.com/socrates-vs-writing/" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">ソクラテスと書き言葉（2011年）</h2>
+          <p class="card-summary">ソクラテスと書き言葉に関する論考についての投稿です。元情報が限られているため、見出しの示すテーマの提示にとどめています。</p>
+          <span class="card-source">Hacker News</span>
+          <span class="card-date">9/22 09:06</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.itmedia.co.jp/news/article/2609/22/2000001668/" target="_blank" rel="noopener">
+          <span class="card-badge">国内</span>
+          <h2 class="card-title">SpaceXAI、最高性能の「Grok 4.7」を発表</h2>
+          <p class="card-summary">SpaceXAIは、コーディングや知識労働向けのAIモデル「Grok 4.7」を発表しました。前モデルと同じ価格と速度を維持しながら大規模ベースモデルを採用し、業務タスク性能や安全性を強化しています。</p>
+          <span class="card-source">ITmedia AI+</span>
+          <span class="card-date">9/22 08:46</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://techcrunch.com/2026/09/21/the-man-who-built-apples-stores-doesnt-buy-silicon-valleys-bet-on-ai-shopping/" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">元Apple Store建築家、シリコンバレーのAIショッピング推進に疑問符</h2>
+          <p class="card-summary">Apple Storeを手掛けた建築家ロン・ジョンソン氏が、シリコンバレーによるAIショッピングへの期待に懐疑的な見方を示しました。同氏は、Appleの強みの源泉は常に人にあると述べています。</p>
+          <span class="card-source">TechCrunch AI</span>
+          <span class="card-date">9/22 08:44</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://lwn.net/SubscriberLink/1094575/2385e98583715c2b/" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">Git 2.56および3.0への期待</h2>
+          <p class="card-summary">バージョン管理システムであるGitの次期バージョン2.56および3.0に関する話題です。元情報が限られているため、見出しの提示にとどめています。</p>
+          <span class="card-source">Hacker News</span>
+          <span class="card-date">9/22 08:16</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://atmarkit.itmedia.co.jp/ait/articles/2609/22/news009.html" target="_blank" rel="noopener">
+          <span class="card-badge">国内</span>
+          <h2 class="card-title">キユーピー、AI活用で工場シミュレーション開発工数を8割削減</h2>
+          <p class="card-summary">キユーピーは生成AIを活用し、工場シミュレーションモデルの開発工数を8割削減しました。専門知識が必要で属人化しやすい構築作業に対し、3つの課題を解決して効率化を実現しています。</p>
+          <span class="card-source">ITmedia AI+</span>
+          <span class="card-date">9/22 08:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://arstechnica.com/security/2026/09/muse-metas-extraordinarily-privileged-ai-assistant-has-a-serious-0-day/" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">MetaのAI「Muse」に深刻なゼロデイ脆弱性</h2>
+          <p class="card-summary">Metaの新AIアシスタント「Muse」に深刻なゼロデイ脆弱性が存在することが判明しました。簡単なClickFix攻撃などの手法により、エージェントが完全にのっとられる危険性があります。</p>
+          <span class="card-source">Ars Technica</span>
+          <span class="card-date">9/22 07:24</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.theverge.com/ai-artificial-intelligence/998453/california-ai-data-center-bills" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">カリフォルニア州、AIデータセンターのエネルギーと水使用の規制を強化</h2>
+          <p class="card-summary">カリフォルニア州のギャビン・ニューサム知事は、AIデータセンターの光熱費コストが住民に転嫁されるのを防ぐための法案7件に署名しました。同州ではデータセンターのエネルギーおよび水使用に関する規制が強化されます。</p>
+          <span class="card-source">The Verge AI</span>
+          <span class="card-date">9/22 05:29</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://techcrunch.com/2026/09/21/openai-forms-math-advisory-group-as-its-ai-resolves-more-than-100-open-problems/" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">OpenAI、AIが100以上の未解決問題を解決したことを受け数学諮問グループを設立</h2>
+          <p class="card-summary">OpenAIは、自社AIが100を超える未解決問題を解決したことを受けて数学諮問グループを立ち上げました。ただし、このグループにはOpenAIが進める数学研究を遅らせたり変更させたりする権限は与えられません。</p>
+          <span class="card-source">TechCrunch AI</span>
+          <span class="card-date">9/22 05:15</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://techcrunch.com/2026/09/21/discover-whats-next-5-days-left-to-save-up-to-200-on-techcrunch-disrupt-2026/" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">TechCrunch Disrupt 2026の割引チケット販売が残り5日に</h2>
+          <p class="card-summary">イベント「TechCrunch Disrupt 2026」のパスが最大200ドル割引となる期間が残り5日となっています。2枚目のチケットが50%オフになる特典も用意されています。</p>
+          <span class="card-source">TechCrunch AI</span>
+          <span class="card-date">9/22 04:25</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://techcrunch.com/2026/09/21/metas-muse-is-outpacing-chatgpts-early-mobile-launch/" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">MetaのAI「Muse」、初期モバイル提供でChatGPTを上回るペースを記録</h2>
+          <p class="card-summary">Metaの新AIエージェント「Muse」が、米・カナダでのサービス開始後の同期間においてChatGPTを上回るダウンロード数と日間アクティブユーザー数を記録しています。</p>
+          <span class="card-source">TechCrunch AI</span>
+          <span class="card-date">9/22 04:19</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://qiita.com/Takumi-9505/items/97191f0b5e201f6483d4?utm_campaign=popular_items&amp;utm_medium=feed&amp;utm_source=popular_items" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">よりそいAI相談室</h2>
+          <p class="card-summary">「よりそいAI相談室」と題された記事です。元の情報量が少ないため、見出しの言い換えにとどめています。</p>
+          <span class="card-source">Qiita</span>
+          <span class="card-date">9/22 00:51</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://qiita.com/maskot1977/items/2b0c42c05a5cc06dc545?utm_campaign=popular_items&amp;utm_medium=feed&amp;utm_source=popular_items" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">説得より問いを増やす対話のOS設計：行動経済学からの視点</h2>
+          <p class="card-summary">「説得する」のではなく「問いを増やす」対話のOS設計についての記事です。元の情報量が限られているため見出しの概要提示にとどめています。</p>
+          <span class="card-source">Qiita</span>
+          <span class="card-date">9/22 00:03</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.theverge.com/podcast/996874/apple-john-ternus-tim-cook-mark-gurman-future-ai-siri-iphone" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">ジョン・ターナス氏はAppleの次なるヒットを生み出せるか</h2>
+          <p class="card-summary">BloombergのApple専門記者マーク・ガーマン氏へのインタビューです。Appleのハードウェア責任者ジョン・ターナス氏が次なる看板製品を生み出せるかについて議論されています。</p>
+          <span class="card-source">The Verge AI</span>
+          <span class="card-date">9/21 23:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.theverge.com/tech/998191/apple-siri-ai-iphone-16-class-action-lawsuit-settlement" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">iPhone所有者、Appleの2億5000万ドルのSiri和解金請求が可能に</h2>
+          <p class="card-summary">AppleがAI機能を向上させたSiriを提供できなかった件で2億5000万ドルの和解金を支払うことに合意しました。対象となるiPhone所有者は賠償の請求申請が可能になっています。</p>
+          <span class="card-source">The Verge AI</span>
+          <span class="card-date">9/21 22:36</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://openai.com/index/advisory-group-on-mathematics-and-ai" target="_blank" rel="noopener">
+          <span class="card-badge">企業発表</span>
+          <h2 class="card-title">OpenAI、数学およびAIに関する諮問グループを発足</h2>
+          <p class="card-summary">OpenAIは、数学と人工知能に関する独立した諮問グループと提携を開始しました。このグループは、新たに登場する研究成果の検証や情報発信のガイダンスを行います。</p>
+          <span class="card-source">OpenAI News</span>
+          <span class="card-date">9/21 21:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://openai.com/index/higgsfield-from-prompt-to-production-with-astra" target="_blank" rel="noopener">
+          <span class="card-badge">企業発表</span>
+          <h2 class="card-title">Higgsfield AI、GPT-6 Astraにより新動画機能を即日提供</h2>
+          <p class="card-summary">Higgsfield AIは「GPT-6 Astra」を活用し、新しい動画機能を1日でリリースしました。中小企業による動画広告制作を容易にし、新しい制作ツールを迅速に提供します。</p>
+          <span class="card-source">OpenAI News</span>
+          <span class="card-date">9/21 21:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://zenn.dev/prozolic/articles/3bb3f91f7408cc" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">初開催の技術カンファレンス「C# Kaigi 2026」参加レポート</h2>
+          <p class="card-summary">2026年9月19日に初開催された技術カンファレンス「C# Kaigi 2026」の参加レポートです。約100人の参加者が現地に集まり、著者は登壇者として参加した様子を報告しています。</p>
+          <span class="card-source">Zenn</span>
+          <span class="card-date">9/21 19:24</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.theverge.com/ai-artificial-intelligence/998090/un-ai-panel-hugging-face-hack-precautionary-principle" target="_blank" rel="noopener">
+          <span class="card-badge">海外</span>
+          <h2 class="card-title">国連パネル、確証を待たずにAI規制・セーフガードの導入を提言</h2>
+          <p class="card-summary">国連の科学パネルは、AIの機能が高まるなか、リスクが完全に解明されるのを待たずに政府がAIエージェントの規制を進める必要があると警告しました。</p>
+          <span class="card-source">The Verge AI</span>
+          <span class="card-date">9/21 19:18</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://openai.com/index/building-standards-next-phase-ai" target="_blank" rel="noopener">
+          <span class="card-badge">企業発表</span>
+          <h2 class="card-title">OpenAI、AIの次フェーズに向けた国際標準策定を提案</h2>
+          <p class="card-summary">OpenAIはAIの安全性を向上させるため、共有されたグローバル標準の策定に向けた方針を示しました。連携した評価、報告、ガバナンス体制の構築を呼びかけています。</p>
+          <span class="card-source">OpenAI News</span>
+          <span class="card-date">9/21 19:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://qiita.com/heftykoo/items/9ff0d2d1a3ea30c2393e?utm_campaign=popular_items&amp;utm_medium=feed&amp;utm_source=popular_items" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">AIコード補完評価：編集経路を計測する新たなアプローチ</h2>
+          <p class="card-summary">AIコード補完を単一のキー入力だけでなく、「近傍→別関数→別ファイル」という編集経路から評価する取り組みについての記事です。元の情報が少ないため見出しの言い換えにとどめます。</p>
+          <span class="card-source">Qiita</span>
+          <span class="card-date">9/21 16:04</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://openai.com/index/expanding-openai-academy-with-new-learning-paths" target="_blank" rel="noopener">
+          <span class="card-badge">企業発表</span>
+          <h2 class="card-title">OpenAI Academyが新しい学習コースを追加・拡張</h2>
+          <p class="card-summary">OpenAI Academyが従業員、開発者、リーダー、教育者、学生を対象とした新たな学習コースを開設しました。実践的なAIスキルの習得と活用を支援します。</p>
+          <span class="card-source">OpenAI News</span>
+          <span class="card-date">9/21 16:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://qiita.com/shu15511551/items/4f037551f841d786c17d?utm_campaign=popular_items&amp;utm_medium=feed&amp;utm_source=popular_items" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">手順書のマクロ化により業務からAI利用を不要にした事例</h2>
+          <p class="card-summary">指示文ではなく手順書をマクロ化することで、業務でのAI利用回数を0回にし、処理速度を約1秒に短縮した事例です。元の情報が限られているため見出しの要約にとどめます。</p>
+          <span class="card-source">Qiita</span>
+          <span class="card-date">9/21 14:44</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://zenn.dev/otakakot/articles/14d162ea65f67d" target="_blank" rel="noopener">
+          <span class="card-badge">開発者</span>
+          <h2 class="card-title">VercelにおけるGoサーバーの無料デプロイ環境の変化について</h2>
+          <p class="card-summary">VercelにおけるGoサポートの仕様変更に伴い、Goサーバーをシンプルにデプロイできるようになっていたことを報告する記事です。無料デプロイの活用方法について触れられています。</p>
+          <span class="card-source">Zenn</span>
+          <span class="card-date">9/21 13:46</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://arxiv.org/abs/2609.20971" target="_blank" rel="noopener">
+          <span class="card-badge">論文</span>
+          <h2 class="card-title">長文脈LLM向けの高速化技術「RBS-Attention」に関する論文</h2>
+          <p class="card-summary">長文脈を扱う大規模言語モデルの推論において課題となるPrefill処理を効率化する技術「RBS-Attention」に関する論文です。スパースなPrefill手法を提案しています。</p>
+          <span class="card-source">arXiv cs.AI</span>
+          <span class="card-date">9/21 13:00</span>
+        </a>
+      </article>
+    </main>
+
+    <footer>925-Mirai-Shinbun / GitHub Actions により自動生成</footer>
+  </div>
+</body>
+</html>
