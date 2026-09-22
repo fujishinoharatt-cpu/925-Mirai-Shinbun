@@ -8,7 +8,9 @@ for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr :3000 ^| findstr LISTE
 
 npm install express > nul 2>&1
 start http://127.0.0.1:3000/
-npm run editor
+
+node "%~dp0scripts/start-editor.mjs"
 if errorlevel 1 (
+  echo [ERROR] Failed to start editor.
   pause
 )
