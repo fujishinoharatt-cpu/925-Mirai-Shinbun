@@ -1,0 +1,11 @@
+{
+  "label": "ニュース",
+  "output": "news.html",
+  "maxAgeHours": 96,
+  "maxItems": 12,
+  "maxPerSource": 4,
+  "seenRetentionDays": 7,
+  "feeds": [
+    { "name": "ニュースの争点", "category": "WEBメディア", "type": "youtube", "channelId": "UCvasqcd8NP0YGKTaKYPb34A" }
+  ]
+}
