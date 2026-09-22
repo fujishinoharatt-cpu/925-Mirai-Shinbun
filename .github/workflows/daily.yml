@@ -27,11 +27,15 @@ jobs:
         with:
           node-version: '20'
 
+      - name: 依存関係をインストール
+        run: npm install
+
       - name: ページを生成
         run: node scripts/build.mjs
         env:
           # 値は GitHub の Secrets から渡される。ログにも出力されない
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
 
       - name: 生成物をコミット
         run: |
