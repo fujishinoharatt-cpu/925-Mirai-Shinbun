@@ -166,13 +166,17 @@
           for (const feed of edition.feeds) {
             const item = document.createElement('div');
             item.className = 'channel-item';
+            const isYouTube = feed.type === 'youtube';
+            const feedId = isYouTube ? feed.channelId : feed.url;
+            const editBtn = isYouTube ? `<button class="btn-primary btn-small" onclick="editChannel('${editionId}', '${feedId}')">編集</button>` : '';
             item.innerHTML = `
               <div class="channel-info">
                 <div class="channel-name">${feed.name}</div>
-                <div class="channel-id">${feed.channelId}</div>
+                <div class="channel-id">${isYouTube ? feed.channelId : feed.url}</div>
               </div>
               <div class="btn-group">
-                <button class="btn-danger btn-small" onclick="deleteChannel('${editionId}', '${feed.channelId}')">削除</button>
+                ${editBtn}
+                <button class="btn-danger btn-small" onclick="deleteChannel('${editionId}', '${feedId}')">削除</button>
               </div>
             `;
             channelList.appendChild(item);
