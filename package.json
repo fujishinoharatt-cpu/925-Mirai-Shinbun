@@ -1,0 +1,12 @@
+{
+  "name": "mirai-shinbun",
+  "version": "1.0.0",
+  "description": "未来新聞 - AI と YouTube を使ったニュース紙面生成",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
