@@ -151,6 +151,41 @@ app.post('/api/editions/:id/channels', (req, res) => {
   }
 });
 
+// API: チャンネルを更新
+app.patch('/api/editions/:id/channels/:channelId', (req, res) => {
+  const { id, channelId } = req.params;
+  const { name, channelId: newChannelId, category } = req.body;
+
+  if (!name || !newChannelId || !category) {
+    return res.status(400).json({ error: 'name, channelId, category は必須です' });
+  }
+
+  const data = loadAllEditions();
+
+  if (!data[id]) {
+    return res.status(404).json({ error: '紙面が見つかりません' });
+  }
+
+  const feedIndex = data[id].feeds.findIndex(f => f.channelId === channelId);
+  if (feedIndex === -1) {
+    return res.status(404).json({ error: 'チャンネルが見つかりません' });
+  }
+
+  data[id].feeds[feedIndex] = {
+    name,
+    category,
+    type: 'youtube',
+    channelId: newChannelId
+  };
+
+  try {
+    saveEditions(data);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // API: チャンネルを削除
 app.delete('/api/editions/:id/channels/:channelId', (req, res) => {
   const { id, channelId } = req.params;
