@@ -1,0 +1,11 @@
+{
+  "label": "トレンド",
+  "output": "trend.html",
+  "maxAgeHours": 96,
+  "maxItems": 20,
+  "maxPerSource": 20,
+  "seenRetentionDays": 7,
+  "feeds": [
+    { "name": "GIZMODO Japan", "category": "テック", "url": "https://www.gizmodo.jp/index.xml" }
+  ]
+}
