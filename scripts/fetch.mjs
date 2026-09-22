@@ -1,3 +1,9 @@
+import dotenv from 'dotenv';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: join(__dirname, '..', '.env') });
+
 // 未来新聞 — RSS 収集
 // RSS 2.0 と Atom の両方を、外部パッケージなしで解析する
 
@@ -104,8 +110,43 @@ async function fetchFeedWithRetry(feed) {
   }
 }
 
+// YouTube Data API から動画を取得
+async function fetchYouTubeChannel(feed) {
+  if (!process.env.YOUTUBE_API_KEY) {
+    throw new Error('YOUTUBE_API_KEY が設定されていません');
+  }
+
+  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${feed.channelId}&maxResults=15&order=date&type=video&key=${process.env.YOUTUBE_API_KEY}`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    return data.items.map(item => ({
+      url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+      title: item.snippet.title,
+      description: item.snippet.description,
+      source: feed.name,
+      category: feed.category,
+      publishedAt: new Date(item.snippet.publishedAt),
+    }));
+  } catch (e) {
+    throw new Error(`${feed.name}: ${e.message}`);
+  }
+}
+
 export async function collectArticles(config, seenUrls = new Set()) {
-  const results = await Promise.allSettled(config.feeds.map(fetchFeedWithRetry));
+  // RSS と YouTube を区別するラッパー関数
+  const fetchFeed = async (feed) => {
+    if (feed.type === 'youtube') {
+      return await fetchYouTubeChannel(feed);
+    } else {
+      return await fetchFeedWithRetry(feed);
+    }
+  };
+
+  const results = await Promise.allSettled(config.feeds.map(fetchFeed));
 
   const collected = [];
   const failures = [];
