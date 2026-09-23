@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0f1420">
-<title>未来新聞 動画</title>
+<title>未来新聞 ニュース</title>
 <style>
   /* 開発中テーマ: ダーク系グラスモーフィズム（Agent-T / Theme-Policy）
      運用移行時は :root の変数セットを差し替えるだけで済むようにする */
@@ -175,12 +175,12 @@
   <div class="wrap">
     <header>
       <h1 class="title">未来新聞</h1>
-      <p class="built-at">動画　最終更新 2026/09/23 13:16</p>
-      <span class="step-badge">AI要約なし（RSS原文）</span>
+      <p class="built-at">ニュース　最終更新 2026/09/23 13:15</p>
+      <span class="step-badge">AI要約つき</span>
       <nav class="nav">
         <a class="nav-item" href="index.html">AI・技術</a>
-        <a class="nav-item" href="news.html">ニュース</a>
-        <span class="nav-item nav-current">動画</span>
+        <span class="nav-item nav-current">ニュース</span>
+        <a class="nav-item" href="video.html">動画</a>
       </nav>
     </header>
 
@@ -190,59 +190,44 @@
         <div class="report-body">
           <h3>今朝の実行結果</h3>
           <dl class="kv">
-            <dt>実行時刻</dt><dd>2026/09/23 13:16</dd>
-            <dt>AI要約</dt><dd>要約なし（HTTP 503: This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again lat）</dd>
-            <dt>掲載済みの記録</dt><dd>9件</dd>
+            <dt>実行時刻</dt><dd>2026/09/23 13:15</dd>
+            <dt>AI要約</dt><dd>gemini-3.6-flash に 2件をまとめて1回</dd>
+            <dt>掲載済みの記録</dt><dd>2件</dd>
           </dl>
 
           <h3>絞り込みの内訳</h3>
           <table class="stages">
             <tr>
               <td class="stage-label">RSSから取得</td>
-              <td class="stage-count">60件</td>
+              <td class="stage-count">15件</td>
             </tr>
             <tr>
-              <td class="stage-label">↓ 168時間以内</td>
-              <td class="stage-count">3件</td>
+              <td class="stage-label">↓ 96時間以内</td>
+              <td class="stage-count">2件</td>
             </tr>
             <tr>
               <td class="stage-label">↓ 重複を除く</td>
-              <td class="stage-count">3件</td>
+              <td class="stage-count">2件</td>
             </tr>
             <tr>
               <td class="stage-label">↓ 掲載済みを除く</td>
-              <td class="stage-count">1件</td>
+              <td class="stage-count">2件</td>
             </tr>
             <tr>
               <td class="stage-label">↓ 1媒体4件まで</td>
-              <td class="stage-count">1件</td>
+              <td class="stage-count">2件</td>
             </tr>
             <tr>
               <td class="stage-label">↓ 掲載</td>
-              <td class="stage-count">1件</td>
+              <td class="stage-count">2件</td>
             </tr>
           </table>
 
-          <h3>取得元 4サイト</h3>
+          <h3>取得元 1サイト</h3>
           <table class="feeds">
           <tr>
-            <td class="feed-cat">CG映像</td>
-            <td>たてはま / CGBeginner</td>
-            <td class="stat-ok">15件</td>
-          </tr>
-          <tr>
-            <td class="feed-cat">テクノロジー</td>
-            <td>ゆっくり情報科学</td>
-            <td class="stat-ok">15件</td>
-          </tr>
-          <tr>
-            <td class="feed-cat">AI</td>
-            <td>3Blue1BrownJapan</td>
-            <td class="stat-ok">15件</td>
-          </tr>
-          <tr>
-            <td class="feed-cat">CG映像</td>
-            <td>にゃんたのAI</td>
+            <td class="feed-cat">WEBメディア</td>
+            <td>ニュースの争点</td>
             <td class="stat-ok">15件</td>
           </tr>
           </table>
@@ -250,9 +235,9 @@
           <h3>処理の仕様</h3>
           <ul class="spec">
             <li>毎朝 5:30（日本時間）に GitHub Actions が自動実行</li>
-            <li>直近 168 時間以内に公開された記事が対象</li>
+            <li>直近 96 時間以内に公開された記事が対象</li>
             <li>1媒体あたり最大 4 件、全体で最大 12 件</li>
-            <li>一度掲載した記事は 21 日間は再掲しない</li>
+            <li>一度掲載した記事は 7 日間は再掲しない</li>
             <li>要約は全記事を1回のリクエストにまとめて送る（1日1回）</li>
             <li>要約に失敗した日は RSS の原文を表示し、ページ自体は更新する</li>
             <li>全サイトの取得に失敗した日は更新せず、前日の紙面を残す</li>
@@ -262,10 +247,20 @@
 
     <main>
       <article class="card">
-        <a class="card-link" href="https://www.youtube.com/watch?v=BORAq995Ye4" target="_blank" rel="noopener">
-          <span class="card-badge">CG映像</span>
-          <h2 class="card-title">Claude Codeを日常業務で使いこなす！CLAUDE.mdの設定や最適なフォルダ設計を解説してみた</h2>
-          <span class="card-source">にゃんたのAI</span>
+        <a class="card-link" href="https://www.youtube.com/watch?v=Ed6jL6FnBzY" target="_blank" rel="noopener">
+          <span class="card-badge">WEBメディア</span>
+          <h2 class="card-title">災害時の避難所とインフラ整備の課題を大石久和氏が語る</h2>
+          <p class="card-summary">熊本地震や台風被害などの事例から、市区町村だけの努力で大災害に備えることの限界や避難所の問題点が指摘されています。元国土交通省技監の大石久和氏が、政治家のインフラに対する姿勢や問題の本質について述べています。</p>
+          <span class="card-source">ニュースの争点</span>
+          <span class="card-date">9/21 18:00</span>
+        </a>
+      </article>
+      <article class="card">
+        <a class="card-link" href="https://www.youtube.com/watch?v=flMAfZ67w6U" target="_blank" rel="noopener">
+          <span class="card-badge">WEBメディア</span>
+          <h2 class="card-title">国立映画アーカイブ館長らが語る日本映画の魅力と文化継承</h2>
+          <p class="card-summary">国立映画アーカイブ館長の栩木章氏、政治学者の白井聡氏、作家の平坂純一氏が対談しました。日本映画が持つ魅力や、伝統文化を次の世代へと継承していく重要性の本質について語り合っています。</p>
+          <span class="card-source">ニュースの争点</span>
           <span class="card-date">9/19 18:00</span>
         </a>
       </article>
