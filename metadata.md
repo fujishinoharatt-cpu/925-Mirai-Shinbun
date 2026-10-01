@@ -16,8 +16,8 @@
 
 | サービス種別 | 連携システム名 | 開発/設定URL(コード等) | 本番/公開URL(WebApp等) | データ保存先 | 役割・用途 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| **その他** | 未来新聞 (Web App) | [コードを開く 🔗](https://github.com/fujishinoharatt-cpu/925-Mirai-Shinbun) | [Web Appを開く](https://fujishinoharatt-cpu.github.io/925-Mirai-Shinbun/) | `docs/index.html` | AI要約ニュース紙面の閲覧（GitHub Pages静的配信） |
 | **GitHub Actions** | 定期実行エンジン | `.github/workflows/daily.yml` | - | - | 毎朝 5:30 (JST) にクラウド上で収集〜公開までを実行するタイマー兼サーバー |
-| **GitHub Pages** | 公開ページ配信 | `docs/` | （未設定） | `docs/index.html` | 生成済み HTML の静的配信。スマホのホーム画面に追加して閲覧する |
 | **Gemini API** | 要約エンジン | - | - | - | 収集記事をまとめて 1 日 1 回だけ呼び出し、日本語の見出しと要約を生成 |
 | **RSS 各サイト** | ニュース供給元 | `config/feeds.json` | - | - | 収集対象フィードの一覧。ジャンル変更はこのファイルのみで行う |
 
