@@ -13,8 +13,8 @@ for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr :3000 ^| findstr LISTE
 echo Installing dependencies...
 call npm install express >nul 2>&1
 
-echo Starting browser...
-start http://127.0.0.1:3000/
+echo Starting browser (opens in 3 seconds, after the server is up)...
+start "" cmd /c "timeout /t 3 >nul & start http://127.0.0.1:3000/"
 
 echo.
 echo ========================================================
